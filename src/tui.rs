@@ -1,5 +1,6 @@
-use std::env;
+use std::io;
 
+use anyhow::Result;
 use list::PlainList;
 use ratatui::{buffer::Buffer, layout::Rect, widgets::Widget};
 
@@ -11,18 +12,12 @@ pub struct Tui<'a> {
     list: PlainList<'a>,
 }
 
-impl Default for Tui<'_> {
-    fn default() -> Self {
-        let items: Vec<_> = env::args().collect();
-        Tui {
-            list: PlainList::new(items.into_iter()),
-        }
-    }
-}
-
 impl Tui<'_> {
-    pub fn new() -> Self {
-        Tui::default()
+    pub fn new() -> Result<Self> {
+        let items = io::stdin().lines().collect::<Result<Vec<_>, _>>()?;
+        Ok(Tui {
+            list: PlainList::new(items.into_iter()),
+        })
     }
 
     pub fn handle_action(&mut self, action: TuiAction) {

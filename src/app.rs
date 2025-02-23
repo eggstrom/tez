@@ -1,40 +1,56 @@
-use std::sync::mpsc::{self, Receiver};
+use std::sync::mpsc;
 
 use anyhow::{bail, Result};
+use ratatui::{widgets::Clear, DefaultTerminal};
 
 use crate::{
     actions::{handle_events, Action},
+    config::Config,
+    state::State,
     tui::Tui,
 };
 
 pub struct App<'a> {
-    receiver: Receiver<Action>,
+    config: Config,
+    state: State,
     tui: Tui<'a>,
 }
 
-impl Default for App<'_> {
-    fn default() -> Self {
+impl App<'_> {
+    pub fn new(config: Config) -> Result<Self> {
+        Ok(App {
+            config,
+            state: State::default(),
+            tui: Tui::new()?,
+        })
+    }
+
+    pub fn run(mut self) -> Result<()> {
+        let mut terminal = ratatui::init_with_options(self.config.terminal_options()?);
         let (sender, receiver) = mpsc::channel();
         handle_events(sender);
-        App {
-            receiver,
-            tui: Tui::default(),
-        }
-    }
-}
 
-impl App<'_> {
-    pub fn run(mut self) -> Result<()> {
-        let mut terminal = ratatui::init();
-        loop {
-            terminal.draw(|frame| frame.render_widget(&mut self.tui, frame.area()))?;
-            match self.receiver.recv()? {
+        while self.state.running() {
+            self.draw(&mut terminal)?;
+            match receiver.recv()? {
                 Action::Error(error) => bail!(error),
-                Action::Quit => break,
+                Action::Exit => self.exit(&mut terminal)?,
                 Action::Tui(action) => self.tui.handle_action(action),
             }
         }
+
         ratatui::restore();
+        Ok(())
+    }
+
+    fn draw(&mut self, terminal: &mut DefaultTerminal) -> Result<()> {
+        terminal.draw(|frame| frame.render_widget(&mut self.tui, frame.area()))?;
+        Ok(())
+    }
+
+    fn exit(&mut self, terminal: &mut DefaultTerminal) -> Result<()> {
+        terminal.draw(|frame| frame.render_widget(Clear, frame.area()))?;
+        self.state.exit();
         Ok(())
     }
 }
