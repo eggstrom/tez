@@ -1,14 +1,16 @@
+use anyhow::Result;
+
+use crate::config::Config;
+
 pub struct State {
     running: bool,
 }
 
-impl Default for State {
-    fn default() -> Self {
-        State { running: true }
-    }
-}
-
 impl State {
+    pub fn new(_: &Config) -> Result<Self> {
+        Ok(State { running: true })
+    }
+
     pub fn running(&self) -> bool {
         self.running
     }

@@ -1,7 +1,12 @@
-use std::sync::mpsc;
+use std::{io, sync::mpsc};
 
 use anyhow::{bail, Result};
-use ratatui::{widgets::Clear, DefaultTerminal};
+use crossterm::{
+    cursor::{RestorePosition, SavePosition},
+    execute,
+    terminal::{EnterAlternateScreen, LeaveAlternateScreen},
+};
+use ratatui::{widgets::Clear, DefaultTerminal, TerminalOptions, Viewport};
 
 use crate::{
     actions::{handle_events, Action},
@@ -18,16 +23,17 @@ pub struct App<'a> {
 
 impl App<'_> {
     pub fn new(config: Config) -> Result<Self> {
+        let state = State::new(&config)?;
         Ok(App {
             config,
-            state: State::default(),
+            state,
             tui: Tui::new()?,
         })
     }
 
     pub fn run(mut self) -> Result<()> {
-        let mut terminal = ratatui::init_with_options(self.config.terminal_options()?);
         let (sender, receiver) = mpsc::channel();
+        let mut terminal = self.init_terminal()?;
         handle_events(sender);
 
         while self.state.running() {
@@ -39,7 +45,26 @@ impl App<'_> {
             }
         }
 
+        self.restore_terminal()?;
+        Ok(())
+    }
+
+    fn init_terminal(&self) -> Result<DefaultTerminal> {
+        execute!(io::stdout(), SavePosition)?;
+        let viewport = self.config.viewport()?;
+        if let Viewport::Fullscreen = viewport {
+            execute!(io::stdout(), EnterAlternateScreen)?;
+        }
+        Ok(ratatui::init_with_options(TerminalOptions { viewport }))
+    }
+
+    fn restore_terminal(&self) -> Result<()> {
         ratatui::restore();
+        let viewport = self.config.viewport()?;
+        if let Viewport::Fullscreen = viewport {
+            execute!(io::stdout(), LeaveAlternateScreen)?;
+        }
+        execute!(io::stdout(), RestorePosition)?;
         Ok(())
     }
 
