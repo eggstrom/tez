@@ -1,23 +1,21 @@
 use anyhow::Result;
-use ratatui::Viewport;
-
-use crate::config::Config;
+use crossterm::terminal;
 
 pub struct State {
-    viewport: Viewport,
+    terminal_size: (u16, u16),
     running: bool,
 }
 
 impl State {
-    pub fn new(config: &Config) -> Result<Self> {
+    pub fn new() -> Result<Self> {
         Ok(State {
-            viewport: config.viewport()?,
+            terminal_size: terminal::size()?,
             running: true,
         })
     }
 
-    pub fn viewport(&self) -> &Viewport {
-        &self.viewport
+    pub fn terminal_size(&self) -> (u16, u16) {
+        self.terminal_size
     }
 
     pub fn running(&self) -> bool {

@@ -33,7 +33,7 @@ impl Tui<'_> {
             TuiAction::ScrollUp => self.list.prev(),
             TuiAction::Key(event) => {
                 if let Some(text) = self.input.handle_key_event(event) {
-                    self.list.search(&text);
+                    self.list.search(text);
                 }
             }
         }

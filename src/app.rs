@@ -2,11 +2,10 @@ use std::{io, sync::mpsc};
 
 use anyhow::{bail, Result};
 use crossterm::{
-    cursor::{RestorePosition, SavePosition},
     execute,
     terminal::{EnterAlternateScreen, LeaveAlternateScreen},
 };
-use ratatui::{DefaultTerminal, TerminalOptions, Viewport};
+use ratatui::{DefaultTerminal, TerminalOptions};
 
 use crate::{
     actions::{handle_events, Action},
@@ -23,10 +22,9 @@ pub struct App<'a> {
 
 impl App<'_> {
     pub fn new(config: Config) -> Result<Self> {
-        let state = State::new(&config)?;
         Ok(App {
             config,
-            state,
+            state: State::new()?,
             tui: Tui::new()?,
         })
     }
@@ -51,30 +49,28 @@ impl App<'_> {
 
     fn init_terminal(&mut self) -> Result<DefaultTerminal> {
         let mut terminal = ratatui::init_with_options(TerminalOptions {
-            viewport: self.state.viewport().clone(),
+            viewport: self.config.viewport(self.state.terminal_size().1)?,
         });
-        match self.state.viewport() {
-            Viewport::Fullscreen => execute!(io::stdout(), EnterAlternateScreen)?,
-            Viewport::Inline(_) => terminal.clear()?,
-            // TODO: Make this clear viewport before drawing
-            Viewport::Fixed(..) => execute!(io::stdout(), SavePosition)?,
+
+        match self.config.is_inline() {
+            false => execute!(io::stdout(), EnterAlternateScreen)?,
+            true => terminal.clear()?,
         }
         Ok(terminal)
     }
 
     fn restore_terminal(&mut self, terminal: &mut DefaultTerminal) -> Result<()> {
         ratatui::restore();
-        match self.state.viewport() {
-            Viewport::Fullscreen => execute!(io::stdout(), LeaveAlternateScreen)?,
-            Viewport::Inline(_) => terminal.clear()?,
-            // TODO: Make this restore viewport content
-            Viewport::Fixed(..) => execute!(io::stdout(), RestorePosition)?,
+        match self.config.is_inline() {
+            false => execute!(io::stdout(), LeaveAlternateScreen)?,
+            true => terminal.clear()?,
         }
         Ok(())
     }
 
     fn draw(&mut self, terminal: &mut DefaultTerminal) -> Result<()> {
-        terminal.draw(|frame| frame.render_widget(&mut self.tui, frame.area()))?;
+        terminal
+            .draw(|frame| frame.render_widget(&mut self.tui, self.config.area(frame.area())))?;
         Ok(())
     }
 }
