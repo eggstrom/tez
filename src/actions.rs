@@ -14,6 +14,7 @@ pub enum Action {
 pub enum TuiAction {
     ScrollDown,
     ScrollUp,
+    Key(KeyEvent),
 }
 
 pub fn handle_events(sender: Sender<Action>) {
@@ -36,7 +37,7 @@ fn handle_event(event: Event) -> Option<Action> {
 }
 
 fn handle_key_event(event: KeyEvent) -> Option<Action> {
-    match event {
+    let action = match event {
         KeyEvent {
             code,
             modifiers: KeyModifiers::CONTROL,
@@ -48,5 +49,11 @@ fn handle_key_event(event: KeyEvent) -> Option<Action> {
             _ => None,
         },
         _ => None,
+    };
+
+    // This is temporary
+    match action {
+        Some(_) => action,
+        None => Some(TuiAction::Key(event).into()),
     }
 }
