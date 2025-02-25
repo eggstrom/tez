@@ -6,7 +6,7 @@ use crossterm::{
     execute,
     terminal::{EnterAlternateScreen, LeaveAlternateScreen},
 };
-use ratatui::{widgets::Clear, DefaultTerminal, TerminalOptions, Viewport};
+use ratatui::{DefaultTerminal, TerminalOptions, Viewport};
 
 use crate::{
     actions::{handle_events, Action},
@@ -40,42 +40,41 @@ impl App<'_> {
             self.draw(&mut terminal)?;
             match receiver.recv()? {
                 Action::Error(error) => bail!(error),
-                Action::Exit => self.exit(&mut terminal)?,
+                Action::Exit => self.state.exit(),
                 Action::Tui(action) => self.tui.handle_action(action),
             }
         }
 
-        self.restore_terminal()?;
+        self.restore_terminal(&mut terminal)?;
         Ok(())
     }
 
-    fn init_terminal(&self) -> Result<DefaultTerminal> {
-        execute!(io::stdout(), SavePosition)?;
-        let viewport = self.config.viewport()?;
-        if let Viewport::Fullscreen = viewport {
-            execute!(io::stdout(), EnterAlternateScreen)?;
+    fn init_terminal(&mut self) -> Result<DefaultTerminal> {
+        let mut terminal = ratatui::init_with_options(TerminalOptions {
+            viewport: self.state.viewport().clone(),
+        });
+        match self.state.viewport() {
+            Viewport::Fullscreen => execute!(io::stdout(), EnterAlternateScreen)?,
+            Viewport::Inline(_) => terminal.clear()?,
+            // TODO: Make this clear viewport before drawing
+            Viewport::Fixed(..) => execute!(io::stdout(), SavePosition)?,
         }
-        Ok(ratatui::init_with_options(TerminalOptions { viewport }))
+        Ok(terminal)
     }
 
-    fn restore_terminal(&self) -> Result<()> {
+    fn restore_terminal(&mut self, terminal: &mut DefaultTerminal) -> Result<()> {
         ratatui::restore();
-        let viewport = self.config.viewport()?;
-        if let Viewport::Fullscreen = viewport {
-            execute!(io::stdout(), LeaveAlternateScreen)?;
+        match self.state.viewport() {
+            Viewport::Fullscreen => execute!(io::stdout(), LeaveAlternateScreen)?,
+            Viewport::Inline(_) => terminal.clear()?,
+            // TODO: Make this restore viewport content
+            Viewport::Fixed(..) => execute!(io::stdout(), RestorePosition)?,
         }
-        execute!(io::stdout(), RestorePosition)?;
         Ok(())
     }
 
     fn draw(&mut self, terminal: &mut DefaultTerminal) -> Result<()> {
         terminal.draw(|frame| frame.render_widget(&mut self.tui, frame.area()))?;
-        Ok(())
-    }
-
-    fn exit(&mut self, terminal: &mut DefaultTerminal) -> Result<()> {
-        terminal.draw(|frame| frame.render_widget(Clear, frame.area()))?;
-        self.state.exit();
         Ok(())
     }
 }
