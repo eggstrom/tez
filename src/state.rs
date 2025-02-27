@@ -4,6 +4,7 @@ use crossterm::terminal;
 pub struct State {
     terminal_size: (u16, u16),
     running: bool,
+    skip_frame: bool,
 }
 
 impl State {
@@ -11,6 +12,7 @@ impl State {
         Ok(State {
             terminal_size: terminal::size()?,
             running: true,
+            skip_frame: false,
         })
     }
 
@@ -24,5 +26,15 @@ impl State {
 
     pub fn exit(&mut self) {
         self.running = false;
+    }
+
+    pub fn skip_frame(&mut self) {
+        self.skip_frame = true;
+    }
+
+    pub fn should_draw(&mut self) -> bool {
+        let should_draw = !self.skip_frame;
+        self.skip_frame = false;
+        should_draw
     }
 }

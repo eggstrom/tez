@@ -8,6 +8,7 @@ mod actions;
 mod app;
 mod cli;
 mod config;
+mod searcher;
 mod state;
 mod tui;
 mod utils;

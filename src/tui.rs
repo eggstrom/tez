@@ -1,4 +1,4 @@
-use std::io;
+use std::sync::mpsc::Sender;
 
 use anyhow::Result;
 use input::Input;
@@ -9,7 +9,10 @@ use ratatui::{
     widgets::Widget,
 };
 
-use crate::actions::TuiAction;
+use crate::{
+    actions::{Action, TuiAction},
+    searcher::SearcherSource,
+};
 
 mod input;
 mod list;
@@ -20,17 +23,16 @@ pub struct Tui<'a> {
 }
 
 impl Tui<'_> {
-    pub fn new() -> Result<Self> {
+    pub fn new(sender: Sender<Action>) -> Result<Self> {
         let input = Input::new();
-        let items = io::stdin().lines().collect::<Result<Vec<_>, _>>()?;
-        let list = SearchableList::new(items.into_iter());
+        let list = SearchableList::new(sender, SearcherSource::Stdin);
         Ok(Tui { input, list })
     }
 
     pub fn handle_action(&mut self, action: TuiAction) {
         match action {
             TuiAction::ScrollDown => self.list.next(),
-            TuiAction::ScrollUp => self.list.prev(),
+            TuiAction::ScrollUp => self.list.previous(),
             TuiAction::Key(event) => {
                 if let Some(text) = self.input.handle_key_event(event) {
                     self.list.search(text);

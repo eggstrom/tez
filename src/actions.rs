@@ -3,14 +3,16 @@ use std::{sync::mpsc::Sender, thread};
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyModifiers};
 use derive_more::From;
 
-#[derive(From)]
+#[derive(Debug, From)]
 pub enum Action {
     Error(anyhow::Error),
     Exit,
+    Draw,
     #[from]
     Tui(TuiAction),
 }
 
+#[derive(Debug)]
 pub enum TuiAction {
     ScrollDown,
     ScrollUp,
