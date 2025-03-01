@@ -1,7 +1,7 @@
 use anyhow::Result;
 use ratatui::{layout::Rect, Viewport};
 
-use crate::utils::{Alignment, Extent};
+use crate::utils::{alignment::Alignment, extent::Extent};
 
 pub struct Config {
     pub width: Option<Extent>,
