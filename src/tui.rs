@@ -32,8 +32,10 @@ impl Tui<'_> {
 
     pub fn handle_action(&mut self, action: TuiAction) {
         match action {
-            TuiAction::ScrollDown => self.list.next(),
-            TuiAction::ScrollUp => self.list.previous(),
+            TuiAction::First => self.list.first(),
+            TuiAction::Last => self.list.last(),
+            TuiAction::Next => self.list.next(),
+            TuiAction::Previous => self.list.previous(),
             TuiAction::Key(event) => {
                 if let Some(text) = self.input.handle_key_event(event) {
                     self.list.search(text);

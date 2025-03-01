@@ -82,6 +82,14 @@ impl SearchableList<'_> {
         }
     }
 
+    pub fn first(&mut self) {
+        self.list.first();
+    }
+
+    pub fn last(&mut self) {
+        self.list.last();
+    }
+
     pub fn next(&mut self) {
         self.list.next();
         self.scrollbar_state.next();

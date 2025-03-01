@@ -35,6 +35,14 @@ impl LazyState {
         }
     }
 
+    pub fn first(&mut self) {
+        self.pos = LazyPos::Start(0);
+    }
+
+    pub fn last(&mut self) {
+        self.pos = LazyPos::End(0);
+    }
+
     pub fn next(&mut self) {
         self.pos = match (self.len, self.pos) {
             (0, _) => LazyPos::None,
@@ -89,6 +97,14 @@ impl<'a> LazyList<'a> {
             builder,
             state: LazyState::default(),
         }
+    }
+
+    pub fn first(&mut self) {
+        self.state.first();
+    }
+
+    pub fn last(&mut self) {
+        self.state.last();
     }
 
     pub fn next(&mut self) {

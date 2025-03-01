@@ -14,8 +14,10 @@ pub enum Action {
 
 #[derive(Debug)]
 pub enum TuiAction {
-    ScrollDown,
-    ScrollUp,
+    First,
+    Last,
+    Next,
+    Previous,
     Key(KeyEvent),
 }
 
@@ -46,8 +48,17 @@ fn handle_key_event(event: KeyEvent) -> Option<Action> {
             ..
         } => match code {
             KeyCode::Char('c') => Some(Action::Exit),
-            KeyCode::Char('n') => Some(TuiAction::ScrollDown.into()),
-            KeyCode::Char('p') => Some(TuiAction::ScrollUp.into()),
+            KeyCode::Char('n') => Some(TuiAction::Next.into()),
+            KeyCode::Char('p') => Some(TuiAction::Previous.into()),
+            _ => None,
+        },
+        KeyEvent {
+            code,
+            modifiers: KeyModifiers::ALT,
+            ..
+        } => match code {
+            KeyCode::Char('a') => Some(TuiAction::First.into()),
+            KeyCode::Char('e') => Some(TuiAction::Last.into()),
             _ => None,
         },
         _ => None,
