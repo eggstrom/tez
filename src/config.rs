@@ -21,31 +21,25 @@ impl Config {
         })
     }
 
-    pub fn area(&self, frame_area: Rect) -> Rect {
+    pub fn area(&self, area: Rect) -> Rect {
         if self.width.is_none() {
-            return frame_area;
+            return area;
         }
 
-        let height = frame_area.height;
+        let height = area.height;
         let width = self
             .width
-            .map_or(frame_area.width, |width| width.cells(frame_area.width))
-            .min(frame_area.width);
+            .map_or(area.width, |width| width.cells(area.width))
+            .min(area.width);
         let x = match self.alignment {
-            Alignment::Left => frame_area.x,
-            Alignment::Center => frame_area.width / 2 - width / 2,
-            Alignment::Right => frame_area.width - width,
-            Alignment::Position(pos @ 0..) => {
-                (pos.min(u16::MAX as i32) as u16).clamp(0, frame_area.width - width)
-            }
-            Alignment::Position(pos) => ((frame_area.width - width)
-                .saturating_sub((pos.saturating_neg()).min(u16::MAX as i32) as u16))
-            .clamp(0, frame_area.width - width),
+            Alignment::Left(pos) => pos.min(area.width - width),
+            Alignment::Center => area.width / 2 - width / 2,
+            Alignment::Right(pos) => area.width.saturating_sub(width).saturating_sub(pos),
         };
 
         Rect {
             x,
-            y: frame_area.y,
+            y: area.y,
             width,
             height,
         }
