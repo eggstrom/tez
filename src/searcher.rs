@@ -126,7 +126,6 @@ impl Searcher {
         self.nucleo.snapshot().matched_item_count() as usize
     }
 
-    // TODO: Fix start being greater than end on occasion here
     pub fn results(&self, offset: usize, height: u16) -> Vec<String> {
         let (offset, height) = (offset as u32, height as u32);
         let snapshot = self.nucleo.snapshot();

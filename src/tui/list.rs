@@ -101,9 +101,10 @@ impl Widget for &mut SearchableList<'_> {
     fn render(self, area: Rect, buf: &mut Buffer) {
         self.searcher.tick();
 
-        self.list.update_height(area.height - 2);
+        let height = area.height - 2;
+        self.list.update_height(height);
         let len = self.searcher.result_count();
-        let results = self.searcher.results(self.list.offset(), area.height);
+        let results = self.searcher.results(self.list.offset(), height);
         self.list
             .render(area, buf, &mut LazyListState::new(len, results));
 

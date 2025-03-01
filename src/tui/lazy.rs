@@ -30,7 +30,7 @@ impl LazyState {
         self.len = len;
         match self.pos {
             LazyPos::Start(pos) if pos >= len => self.pos = LazyPos::Start(len - 1),
-            LazyPos::End(pos) if pos >= len => self.pos = LazyPos::Start(len - 1),
+            LazyPos::End(pos) if pos >= len => self.pos = LazyPos::End(len - 1),
             _ => (),
         }
     }
@@ -57,7 +57,7 @@ impl LazyState {
         if let Some(selected) = self.position() {
             self.offset = self
                 .offset
-                .clamp(selected.saturating_sub(height as usize), selected);
+                .clamp(selected.saturating_sub(height as usize - 1), selected);
         }
     }
 
