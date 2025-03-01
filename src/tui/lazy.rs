@@ -26,12 +26,26 @@ struct LazyState {
 }
 
 impl LazyState {
-    pub fn set_len(&mut self, len: usize) {
+    pub fn update(&mut self, len: usize, height: u16) {
+        self.update_len(len);
+        self.update_height(height);
+    }
+
+    fn update_len(&mut self, len: usize) {
         self.len = len;
         match self.pos {
-            LazyPos::Start(pos) if pos >= len => self.pos = LazyPos::Start(len - 1),
-            LazyPos::End(pos) if pos >= len => self.pos = LazyPos::End(len - 1),
+            LazyPos::Start(pos) if pos >= len => self.pos = LazyPos::Start(len.saturating_sub(1)),
+            LazyPos::End(pos) if pos >= len => self.pos = LazyPos::End(len.saturating_sub(1)),
             _ => (),
+        }
+    }
+
+    fn update_height(&mut self, height: u16) {
+        if let Some(pos) = self.position() {
+            self.offset = self
+                .offset
+                .clamp(pos.saturating_sub((height as usize).saturating_sub(1)), pos)
+                .min(self.len.saturating_sub(height as usize));
         }
     }
 
@@ -61,14 +75,6 @@ impl LazyState {
         };
     }
 
-    pub fn update_offset(&mut self, height: u16) {
-        if let Some(selected) = self.position() {
-            self.offset = self
-                .offset
-                .clamp(selected.saturating_sub(height as usize - 1), selected);
-        }
-    }
-
     pub fn offset(&self) -> usize {
         self.offset
     }
@@ -77,12 +83,12 @@ impl LazyState {
         match self.pos {
             LazyPos::None => None,
             LazyPos::Start(pos) => Some(pos),
-            LazyPos::End(pos) => Some(self.len - 1 - pos),
+            LazyPos::End(pos) => Some(self.len.saturating_sub(pos + 1)),
         }
     }
 
     pub fn real_position(&self) -> Option<usize> {
-        self.position().map(|pos| pos - self.offset())
+        self.position().map(|pos| pos.saturating_sub(self.offset()))
     }
 }
 
@@ -115,8 +121,8 @@ impl<'a> LazyList<'a> {
         self.state.previous();
     }
 
-    pub fn update_height(&mut self, height: u16) {
-        self.state.update_offset(height);
+    pub fn update(&mut self, len: usize, height: u16) {
+        self.state.update(len, height);
     }
 
     pub fn offset(&self) -> usize {
@@ -124,24 +130,11 @@ impl<'a> LazyList<'a> {
     }
 }
 
-pub struct LazyListState {
-    len: usize,
-    results: Vec<String>,
-}
-
-impl LazyListState {
-    pub fn new(len: usize, results: Vec<String>) -> Self {
-        LazyListState { len, results }
-    }
-}
-
 impl StatefulWidget for &mut LazyList<'_> {
-    type State = LazyListState;
+    type State = Vec<String>;
 
     fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
-        self.state.set_len(state.len);
-
-        let list = (self.builder)().items(mem::take(&mut state.results));
+        let list = (self.builder)().items(mem::take(state));
         let mut list_state = ListState::default().with_selected(self.state.real_position());
         StatefulWidget::render(&list, area, buf, &mut list_state);
     }

@@ -14,7 +14,7 @@ use crate::{
     searcher::{Searcher, SearcherSource},
 };
 
-use super::lazy::{LazyList, LazyListState};
+use super::lazy::LazyList;
 
 pub struct PlainList<'a> {
     list: List<'a>,
@@ -109,12 +109,11 @@ impl Widget for &mut SearchableList<'_> {
     fn render(self, area: Rect, buf: &mut Buffer) {
         self.searcher.tick();
 
-        let height = area.height - 2;
-        self.list.update_height(height);
         let len = self.searcher.result_count();
-        let results = self.searcher.results(self.list.offset(), height);
-        self.list
-            .render(area, buf, &mut LazyListState::new(len, results));
+        let height = area.height - 2;
+        self.list.update(len, height);
+        let mut results = self.searcher.results(self.list.offset(), height);
+        self.list.render(area, buf, &mut results);
 
         let scrollbar = Scrollbar::default();
         scrollbar.render(area, buf, &mut self.scrollbar_state);
