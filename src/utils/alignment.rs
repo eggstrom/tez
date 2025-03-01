@@ -78,7 +78,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn parse_alignment() {
+    fn parse() {
         assert_eq!("left".parse(), Ok(Alignment::Left(0)));
         assert_eq!("left(1)".parse(), Ok(Alignment::Left(1)));
         assert_eq!("left ( 1 )".parse(), Ok(Alignment::Left(1)));

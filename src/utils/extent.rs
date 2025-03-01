@@ -84,7 +84,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn parse_extent() {
+    fn parse() {
         assert_eq!("1".parse(), Ok(Extent::Cells(1)));
         assert_eq!("10%".parse(), Ok(Extent::Percentage(0.1)));
         assert_eq!("10.0%".parse(), Ok(Extent::Percentage(0.1)));
@@ -94,7 +94,7 @@ mod tests {
     }
 
     #[test]
-    fn deserialize_extent() {
+    fn deserialize() {
         assert_eq!(toml::Value::Integer(1).try_into(), Ok(Extent::Cells(1)));
         assert_eq!(
             toml::Value::String("1".to_string()).try_into(),
@@ -116,7 +116,7 @@ mod tests {
     }
 
     #[test]
-    fn convert_extent_to_cells() {
+    fn convert_to_cells() {
         assert_eq!(Extent::Cells(10).cells(100), 10);
         assert_eq!(Extent::Percentage(0.5).cells(100), 50);
         assert_eq!(Extent::Percentage(1.0).cells(100), 100);
