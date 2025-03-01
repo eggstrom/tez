@@ -25,10 +25,12 @@ impl<T> DebouncedSender<T> {
         }
     }
 
-    pub fn send(&self, data: T, delay: Option<Duration>) {
-        if self.last_send.read().is_ok_and(|last_send| {
-            last_send.is_none_or(|last_send| delay.is_none_or(|delay| last_send.elapsed() > delay))
-        }) {
+    pub fn send(&self, data: T, delay: Duration) {
+        if self
+            .last_send
+            .read()
+            .is_ok_and(|last_send| last_send.is_none_or(|last_send| last_send.elapsed() > delay))
+        {
             let _ = self.sender.send(data);
             if let Ok(mut last_send) = self.last_send.write() {
                 *last_send = Some(Instant::now());
@@ -71,7 +73,7 @@ impl Searcher {
         let nucleo = Nucleo::new(
             nucleo::Config::DEFAULT,
             Arc::new(move || {
-                sender.send(Action::Draw, Some(Duration::from_millis(100)));
+                sender.send(Action::Draw, Duration::from_millis(100));
             }),
             None,
             1,
@@ -120,22 +122,18 @@ impl Searcher {
         self.nucleo.tick(10);
     }
 
-    pub fn results(&self, offset: usize, height: u16) -> SearchResults {
+    pub fn result_count(&self) -> usize {
+        self.nucleo.snapshot().matched_item_count() as usize
+    }
+
+    // TODO: Fix start being greater than end on occasion here
+    pub fn results(&self, offset: usize, height: u16) -> Vec<String> {
         let (offset, height) = (offset as u32, height as u32);
         let snapshot = self.nucleo.snapshot();
         let max = snapshot.matched_item_count();
-
-        SearchResults {
-            items: snapshot
-                .matched_items(offset.min(max)..(offset + height).min(max))
-                .map(|item| item.data.clone())
-                .collect(),
-            len: snapshot.item_count() as usize,
-        }
+        snapshot
+            .matched_items(offset.min(max)..(offset + height).min(max))
+            .map(|item| item.data.clone())
+            .collect()
     }
-}
-
-pub struct SearchResults {
-    pub items: Vec<String>,
-    pub len: usize,
 }

@@ -15,6 +15,7 @@ use crate::{
 };
 
 mod input;
+mod lazy;
 mod list;
 
 pub struct Tui<'a> {

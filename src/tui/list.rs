@@ -1,4 +1,4 @@
-use std::{mem, sync::mpsc::Sender};
+use std::sync::mpsc::Sender;
 
 use ratatui::{
     buffer::Buffer,
@@ -11,8 +11,10 @@ use ratatui::{
 
 use crate::{
     actions::Action,
-    searcher::{SearchResults, Searcher, SearcherSource},
+    searcher::{Searcher, SearcherSource},
 };
+
+use super::lazy::{LazyList, LazyListState};
 
 pub struct PlainList<'a> {
     list: List<'a>,
@@ -42,7 +44,7 @@ impl<'a> PlainList<'a> {
         self.scrollbar_state.next();
     }
 
-    pub fn prev(&mut self) {
+    pub fn previous(&mut self) {
         self.list_state.select_previous();
         self.scrollbar_state.prev();
     }
@@ -57,59 +59,6 @@ impl Widget for &mut PlainList<'_> {
 
         StatefulWidget::render(&self.list, area, buf, &mut self.list_state);
         scrollbar.render(area, buf, &mut self.scrollbar_state);
-    }
-}
-
-pub struct LazyList<'a> {
-    builder: fn() -> List<'a>,
-    len: Option<usize>,
-    offset: usize,
-    selected: Option<usize>,
-}
-
-impl<'a> LazyList<'a> {
-    pub fn new(builder: fn() -> List<'a>) -> Self {
-        LazyList {
-            builder,
-            len: None,
-            offset: 0,
-            selected: None,
-        }
-    }
-
-    pub fn select(&mut self, index: Option<usize>) {
-        self.selected = index;
-        if index.is_none() {
-            self.offset = 0;
-        }
-    }
-
-    pub fn select_next(&mut self) {
-        let len = match self.len {
-            None => return,
-            Some(len) => len,
-        };
-    }
-
-    pub fn select_previous(&mut self) {
-        let len = match self.len {
-            None => return,
-            Some(len) => len,
-        };
-    }
-}
-
-impl StatefulWidget for &mut LazyList<'_> {
-    type State = SearchResults;
-
-    fn render(self, area: Rect, buf: &mut Buffer, state: &mut SearchResults) {
-        self.len = Some(state.len);
-        let list = (self.builder)().items(mem::take(&mut state.items));
-
-        let mut list_state = ListState::default()
-            .with_offset(0)
-            .with_selected(self.selected.map(|sel| sel - self.offset));
-        StatefulWidget::render(&list, area, buf, &mut list_state);
     }
 }
 
@@ -134,12 +83,12 @@ impl SearchableList<'_> {
     }
 
     pub fn next(&mut self) {
-        self.list.select_next();
+        self.list.next();
         self.scrollbar_state.next();
     }
 
     pub fn previous(&mut self) {
-        self.list.select_previous();
+        self.list.previous();
         self.scrollbar_state.prev();
     }
 
@@ -152,8 +101,11 @@ impl Widget for &mut SearchableList<'_> {
     fn render(self, area: Rect, buf: &mut Buffer) {
         self.searcher.tick();
 
-        let mut results = self.searcher.results(self.list.offset, area.height);
-        self.list.render(area, buf, &mut results);
+        self.list.update_height(area.height - 2);
+        let len = self.searcher.result_count();
+        let results = self.searcher.results(self.list.offset(), area.height);
+        self.list
+            .render(area, buf, &mut LazyListState::new(len, results));
 
         let scrollbar = Scrollbar::default();
         scrollbar.render(area, buf, &mut self.scrollbar_state);
