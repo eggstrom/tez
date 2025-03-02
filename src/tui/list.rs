@@ -110,7 +110,7 @@ impl Widget for &mut SearchableList<'_> {
         self.searcher.tick();
 
         let len = self.searcher.result_count();
-        let height = area.height - 2;
+        let height = area.height.saturating_sub(2);
         self.list.update(len, height);
         let mut results = self.searcher.results(self.list.offset(), height);
         self.list.render(area, buf, &mut results);
