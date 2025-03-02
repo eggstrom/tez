@@ -36,7 +36,7 @@ impl Display for Extent {
     }
 }
 
-#[derive(Debug, Error, PartialEq)]
+#[derive(Clone, Copy, Debug, Error, PartialEq)]
 #[error("failed to parse extent")]
 pub struct ParseExtentError;
 
@@ -78,7 +78,9 @@ impl Visitor<'_> for ExtentVisitor {
         E: de::Error,
     {
         Ok(Extent::Cells(
-            value.try_into().map_err(|e| de::Error::custom(e))?,
+            value
+                .try_into()
+                .map_err(|_| de::Error::custom(ParseExtentError))?,
         ))
     }
 
@@ -86,7 +88,7 @@ impl Visitor<'_> for ExtentVisitor {
     where
         E: de::Error,
     {
-        value.parse().map_err(|e| de::Error::custom(e))
+        value.parse().map_err(de::Error::custom)
     }
 }
 
@@ -94,37 +96,56 @@ impl Visitor<'_> for ExtentVisitor {
 mod tests {
     use super::*;
 
+    const STRINGS: &[&str] = &["1", "10%", "10.0%", "10 %", "10.0", " 1 ", " 10% "];
+
+    const PARSED_STRINGS: &[Result<Extent, ParseExtentError>] = &[
+        Ok(Extent::Cells(1)),
+        Ok(Extent::Percentage(0.1)),
+        Ok(Extent::Percentage(0.1)),
+        Ok(Extent::Percentage(0.1)),
+        Err(ParseExtentError),
+        Err(ParseExtentError),
+        Err(ParseExtentError),
+    ];
+
     #[test]
     fn parse() {
-        assert_eq!("1".parse(), Ok(Extent::Cells(1)));
-        assert_eq!("10%".parse(), Ok(Extent::Percentage(0.1)));
-        assert_eq!("10.0%".parse(), Ok(Extent::Percentage(0.1)));
-        assert_eq!("10 %".parse::<Extent>(), Ok(Extent::Percentage(0.1)));
-        assert!("10.0".parse::<Extent>().is_err());
-        assert!(" 1 ".parse::<Extent>().is_err());
-        assert!(" 10% ".parse::<Extent>().is_err());
+        assert_eq!(
+            STRINGS.iter().map(|s| s.parse()).collect::<Vec<_>>(),
+            PARSED_STRINGS
+        );
     }
+
+    const INTS: &[i64] = &[0, -1, 65536];
+
+    const DESERIALIZED_INTS: &[Result<Extent, ParseExtentError>] = &[
+        Ok(Extent::Cells(0)),
+        Err(ParseExtentError),
+        Err(ParseExtentError),
+    ];
 
     #[test]
     fn deserialize() {
-        assert_eq!(toml::Value::Integer(1).try_into(), Ok(Extent::Cells(1)));
         assert_eq!(
-            toml::Value::String("1".to_string()).try_into(),
-            Ok(Extent::Cells(1))
-        );
-        assert_eq!(
-            toml::Value::String("1%".to_string()).try_into(),
-            Ok(Extent::Percentage(0.01))
+            STRINGS
+                .iter()
+                .map(|s| toml::Value::String(s.to_string()).try_into())
+                .collect::<Vec<_>>(),
+            PARSED_STRINGS
+                .iter()
+                .map(|res| res.map_err(<toml::de::Error as de::Error>::custom))
+                .collect::<Vec<_>>()
         );
 
-        assert!(toml::Value::Integer(-1).try_into::<Extent>().is_err());
-        assert!(toml::Value::Integer(i64::MAX).try_into::<Extent>().is_err());
-        assert!(toml::Value::String((-1).to_string())
-            .try_into::<Extent>()
-            .is_err());
-        assert!(toml::Value::String((i64::MAX).to_string())
-            .try_into::<Extent>()
-            .is_err());
+        assert_eq!(
+            INTS.iter()
+                .map(|int| toml::Value::Integer(*int).try_into())
+                .collect::<Vec<_>>(),
+            DESERIALIZED_INTS
+                .iter()
+                .map(|res| res.map_err(<toml::de::Error as de::Error>::custom))
+                .collect::<Vec<_>>()
+        );
     }
 
     #[test]
