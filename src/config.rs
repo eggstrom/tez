@@ -32,9 +32,12 @@ impl Config {
             .map_or(area.width, |width| width.cells(area.width))
             .min(area.width);
         let x = match self.alignment {
-            Alignment::Left(pos) => pos.min(area.width - width),
+            Alignment::Left(extent) => extent.cells(area.width).min(area.width - width),
             Alignment::Center => area.width / 2 - width / 2,
-            Alignment::Right(pos) => area.width.saturating_sub(width).saturating_sub(pos),
+            Alignment::Right(extent) => area
+                .width
+                .saturating_sub(width)
+                .saturating_sub(extent.cells(area.width)),
         };
 
         Rect {
