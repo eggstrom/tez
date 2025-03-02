@@ -1,5 +1,5 @@
 use std::{
-    fmt::{self, Formatter},
+    fmt::{self, Display, Formatter},
     str::FromStr,
 };
 
@@ -17,10 +17,21 @@ pub enum Extent {
 }
 
 impl Extent {
+    pub const ZERO: Extent = Extent::Cells(0);
+
     pub fn cells(&self, size: u16) -> u16 {
         match self {
             Extent::Cells(c) => *c,
             Extent::Percentage(p) => (p * size as f32) as u16,
+        }
+    }
+}
+
+impl Display for Extent {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            Extent::Cells(c) => write!(f, "{c}"),
+            Extent::Percentage(p) => write!(f, "{}%", p * 100.0),
         }
     }
 }
@@ -33,13 +44,13 @@ impl FromStr for Extent {
     type Err = ParseExtentError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if !s.ends_with('%') {
-            s.parse().map(Extent::Cells).map_err(|_| ParseExtentError)
-        } else {
-            s[0..s.len() - 1]
+        if let Some(s) = s.strip_suffix('%') {
+            s.trim_end()
                 .parse()
                 .map(|float: f32| Extent::Percentage(float / 100.0))
                 .map_err(|_| ParseExtentError)
+        } else {
+            s.parse().map(Extent::Cells).map_err(|_| ParseExtentError)
         }
     }
 }
@@ -88,9 +99,10 @@ mod tests {
         assert_eq!("1".parse(), Ok(Extent::Cells(1)));
         assert_eq!("10%".parse(), Ok(Extent::Percentage(0.1)));
         assert_eq!("10.0%".parse(), Ok(Extent::Percentage(0.1)));
-        assert_eq!("10 %".parse::<Extent>(), Err(ParseExtentError));
-        assert_eq!("10.0".parse::<Extent>(), Err(ParseExtentError));
-        assert_eq!("a".parse::<Extent>(), Err(ParseExtentError));
+        assert_eq!("10 %".parse::<Extent>(), Ok(Extent::Percentage(0.1)));
+        assert!("10.0".parse::<Extent>().is_err());
+        assert!(" 1 ".parse::<Extent>().is_err());
+        assert!(" 10% ".parse::<Extent>().is_err());
     }
 
     #[test]
