@@ -5,6 +5,10 @@ use std::{
 
 use anyhow::Result;
 
+use serde::{
+    de::{self, Visitor},
+    Deserialize, Deserializer,
+};
 use thiserror::Error;
 
 use super::extent::Extent;
@@ -63,7 +67,7 @@ impl Display for Alignment {
     }
 }
 
-#[derive(Debug, Error, PartialEq)]
+#[derive(Clone, Copy, Debug, Error, PartialEq)]
 #[error("failed to parse alignment")]
 pub struct ParseAlignmentError;
 
@@ -75,26 +79,81 @@ impl FromStr for Alignment {
     }
 }
 
+impl<'de> Deserialize<'de> for Alignment {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        deserializer.deserialize_str(AlignmentVisitor)
+    }
+}
+
+struct AlignmentVisitor;
+
+impl Visitor<'_> for AlignmentVisitor {
+    type Value = Alignment;
+
+    fn expecting(&self, formatter: &mut Formatter) -> fmt::Result {
+        "an alignment (left[(<EXTENT>)] | center | right[(<EXTENT>)])".fmt(formatter)
+    }
+
+    fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        v.parse().map_err(de::Error::custom)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
+    const STRINGS: &[&str] = &[
+        "left",
+        "left(1)",
+        "left ( 1 )",
+        " left ",
+        "center",
+        " center ",
+        "right",
+        "right(1)",
+        "right ( 1 )",
+        " right ",
+    ];
+
+    const PARSED_STRINGS: &[Result<Alignment, ParseAlignmentError>] = &[
+        Ok(Alignment::Left(Extent::ZERO)),
+        Ok(Alignment::Left(Extent::Cells(1))),
+        Ok(Alignment::Left(Extent::Cells(1))),
+        Err(ParseAlignmentError),
+        Ok(Alignment::Center),
+        Err(ParseAlignmentError),
+        Ok(Alignment::Right(Extent::ZERO)),
+        Ok(Alignment::Right(Extent::Cells(1))),
+        Ok(Alignment::Right(Extent::Cells(1))),
+        Err(ParseAlignmentError),
+    ];
+
     #[test]
     fn parse() {
-        assert_eq!("left".parse(), Ok(Alignment::Left(Extent::ZERO)));
-        assert_eq!("left(1)".parse(), Ok(Alignment::Left(Extent::Cells(1))));
-        assert_eq!("left ( 1 )".parse(), Ok(Alignment::Left(Extent::Cells(1))));
-        assert!(" left(1) ".parse::<Alignment>().is_err());
-
-        assert_eq!("center".parse(), Ok(Alignment::Center));
-        assert!(" center ".parse::<Alignment>().is_err());
-
-        assert_eq!("right".parse(), Ok(Alignment::Right(Extent::ZERO)));
-        assert_eq!("right(1)".parse(), Ok(Alignment::Right(Extent::Cells(1))));
         assert_eq!(
-            "right ( 1 )".parse(),
-            Ok(Alignment::Right(Extent::Cells(1)))
+            STRINGS.iter().map(|s| s.parse()).collect::<Vec<_>>(),
+            PARSED_STRINGS
         );
-        assert!(" right(1) ".parse::<Alignment>().is_err());
+    }
+
+    #[test]
+    fn deserialize() {
+        assert_eq!(
+            STRINGS
+                .iter()
+                .map(|s| toml::Value::String(s.to_string()).try_into())
+                .collect::<Vec<_>>(),
+            PARSED_STRINGS
+                .iter()
+                .map(|res| res.map_err(<toml::de::Error as de::Error>::custom))
+                .collect::<Vec<_>>()
+        );
     }
 }
