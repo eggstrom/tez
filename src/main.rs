@@ -11,7 +11,7 @@ mod config;
 mod searcher;
 mod state;
 mod tui;
-mod utils;
+mod types;
 
 fn main() {
     if let Err(error) = run() {

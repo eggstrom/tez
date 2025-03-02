@@ -3,7 +3,7 @@ use clap::Parser;
 
 use crate::{
     config::Config,
-    utils::{alignment::Alignment, extent::Extent},
+    types::{alignment::Alignment, extent::Extent},
 };
 
 #[derive(Parser)]
