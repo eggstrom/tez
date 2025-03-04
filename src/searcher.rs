@@ -10,7 +10,7 @@ use nucleo::{
     Injector, Nucleo,
 };
 
-use crate::actions::Action;
+use crate::types::action::Action;
 
 struct DebouncedSender<T> {
     sender: Sender<T>,

@@ -10,12 +10,7 @@ use crossterm::{
 };
 use ratatui::{DefaultTerminal, TerminalOptions};
 
-use crate::{
-    actions::{handle_events, Action},
-    config::Config,
-    state::State,
-    tui::Tui,
-};
+use crate::{config::Config, events::handle_events, state::State, tui::Tui, types::action::Action};
 
 pub struct App<'a> {
     config: Config,

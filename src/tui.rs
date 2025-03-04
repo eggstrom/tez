@@ -10,8 +10,8 @@ use ratatui::{
 };
 
 use crate::{
-    actions::{Action, TuiAction},
     searcher::SearcherSource,
+    types::action::{Action, TuiAction},
 };
 
 mod input;

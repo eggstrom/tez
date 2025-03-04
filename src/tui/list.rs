@@ -10,8 +10,8 @@ use ratatui::{
 };
 
 use crate::{
-    actions::Action,
     searcher::{Searcher, SearcherSource},
+    types::action::Action,
 };
 
 use super::lazy::LazyList;

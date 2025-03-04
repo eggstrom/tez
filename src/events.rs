@@ -1,25 +1,8 @@
 use std::{sync::mpsc::Sender, thread};
 
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyModifiers};
-use derive_more::From;
 
-#[derive(Debug, From)]
-pub enum Action {
-    Error(anyhow::Error),
-    Exit,
-    Draw,
-    #[from]
-    Tui(TuiAction),
-}
-
-#[derive(Debug)]
-pub enum TuiAction {
-    First,
-    Last,
-    Next,
-    Previous,
-    Key(KeyEvent),
-}
+use crate::types::action::{Action, TuiAction};
 
 pub fn handle_events(sender: Sender<Action>) {
     thread::spawn(move || loop {

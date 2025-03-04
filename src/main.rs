@@ -4,10 +4,10 @@ use clap::Parser;
 use cli::Cli;
 use crossterm::style::Stylize;
 
-mod actions;
 mod app;
 mod cli;
 mod config;
+mod events;
 mod searcher;
 mod state;
 mod tui;
