@@ -22,7 +22,5 @@ async fn main() {
 }
 
 async fn run() -> Result<()> {
-    let config = Cli::parse().config()?;
-    App::new(config)?.run().await?;
-    Ok(())
+    App::run(Cli::parse().config()?).await
 }

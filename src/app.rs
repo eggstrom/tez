@@ -1,15 +1,12 @@
 use std::io;
 
-use anyhow::{anyhow, bail, Result};
+use anyhow::Result;
 use crossterm::{
     execute,
     terminal::{EnterAlternateScreen, LeaveAlternateScreen},
 };
 use ratatui::{DefaultTerminal, TerminalOptions};
-use tokio::sync::{
-    mpsc::{self, UnboundedReceiver, UnboundedSender},
-    watch,
-};
+use tokio::sync::{mpsc, watch};
 use tokio::task;
 
 use crate::{
@@ -21,44 +18,35 @@ pub struct App<'a> {
     config: Config,
     state: State,
     tui: Tui<'a>,
-    sender: UnboundedSender<Action>,
-    receiver: UnboundedReceiver<Action>,
 }
 
 impl App<'_> {
-    pub fn new(config: Config) -> Result<Self> {
-        let (sender, receiver) = mpsc::unbounded_channel();
+    pub async fn run(config: Config) -> Result<()> {
+        let (sender, mut receiver) = mpsc::unbounded_channel();
         let (draw_sender, draw_receiver) = watch::channel(());
-        task::spawn(debounce_draws(draw_receiver, sender.clone()));
 
         let state = State::new()?;
         let tui = Tui::new(draw_sender)?;
-        Ok(App {
-            config,
-            state,
-            tui,
-            sender,
-            receiver,
-        })
-    }
+        let mut app = App { config, state, tui };
 
-    pub async fn run(mut self) -> Result<()> {
-        let mut terminal = self.init_terminal()?;
-        task::spawn(handle_events(self.sender.clone()));
+        let mut terminal = app.init_terminal()?;
+        task::spawn(handle_events(sender.clone()));
+        task::spawn(debounce_draws(draw_receiver, sender));
 
-        while self.state.running() {
-            if self.state.should_draw() {
-                self.draw(&mut terminal)?;
+        while app.state.running() {
+            if app.state.should_draw() {
+                app.draw(&mut terminal)?;
             }
-            match self.receiver.recv().await.ok_or(anyhow!("todo"))? {
-                Action::Error(error) => bail!(error),
-                Action::Exit => self.state.exit(),
-                Action::Draw => self.draw_forced(&mut terminal)?,
-                Action::Tui(action) => self.tui.handle_action(action),
+            match receiver.recv().await {
+                Some(Action::Error(error)) => Err(error)?,
+                Some(Action::Exit) => app.state.exit(),
+                Some(Action::Draw) => app.draw_forced(&mut terminal)?,
+                Some(Action::Tui(action)) => app.tui.handle_action(action),
+                None => break,
             }
         }
 
-        self.restore_terminal(&mut terminal)?;
+        app.restore_terminal(&mut terminal)?;
         Ok(())
     }
 
@@ -74,7 +62,7 @@ impl App<'_> {
         Ok(terminal)
     }
 
-    fn restore_terminal(&mut self, terminal: &mut DefaultTerminal) -> Result<()> {
+    fn restore_terminal(&self, terminal: &mut DefaultTerminal) -> Result<()> {
         ratatui::restore();
         if !self.config.is_inline() {
             execute!(io::stdout(), LeaveAlternateScreen)?
