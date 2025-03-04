@@ -1,9 +1,16 @@
-use std::str::FromStr;
+use std::{
+    fmt::{self, Display, Formatter},
+    str::FromStr,
+};
 
 use crossterm::event::{KeyCode, KeyModifiers};
+use serde::{
+    de::{self, Visitor},
+    Deserialize, Deserializer,
+};
 use thiserror::Error;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Hash, PartialEq, Eq)]
 pub struct Key {
     key: KeyCode,
     modifiers: KeyModifiers,
@@ -94,6 +101,32 @@ impl FromStr for Key {
     }
 }
 
+struct KeyVisitor;
+
+impl Visitor<'_> for KeyVisitor {
+    type Value = Key;
+
+    fn expecting(&self, formatter: &mut Formatter) -> fmt::Result {
+        "a key with optional modifiers".fmt(formatter)
+    }
+
+    fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        v.parse().map_err(de::Error::custom)
+    }
+}
+
+impl<'de> Deserialize<'de> for Key {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        deserializer.deserialize_str(KeyVisitor)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -142,6 +175,22 @@ mod tests {
 
         assert_eq!(
             strings.iter().map(|s| s.parse()).collect::<Vec<_>>(),
+            parsed_strings
+        );
+    }
+
+    #[test]
+    fn deserialize() {
+        let strings = ["a", "invalid"];
+        let parsed_strings = [
+            Ok(Key::new(K::Char('a'), M::NONE)),
+            Err(<toml::de::Error as de::Error>::custom(
+                ParseKeyError::InvalidKey("invalid".to_string()),
+            )),
+        ];
+
+        assert_eq!(
+            strings.map(|s| toml::Value::String(s.to_string()).try_into()),
             parsed_strings
         );
     }
