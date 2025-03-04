@@ -1,10 +1,11 @@
-use std::{io, sync::Arc, time::Duration};
+use std::{sync::Arc, time::Duration};
 
 use nucleo::{
     pattern::{CaseMatching, Normalization},
     Injector, Nucleo,
 };
 use tokio::{
+    io::{self, AsyncBufReadExt, BufReader},
     sync::{
         mpsc::UnboundedSender,
         watch::{Receiver, Sender},
@@ -22,17 +23,18 @@ pub enum SearcherSource {
 
 impl SearcherSource {
     pub fn inject(&self, injector: Injector<String>) {
-        for data in self.iter() {
-            injector.push(data, |data, columns| {
-                columns[0] = data.as_str().into();
-            });
-        }
+        task::spawn(match self {
+            SearcherSource::Stdin => SearcherSource::inject_stdin(injector),
+            SearcherSource::Command(_) => todo!(),
+        });
     }
 
-    fn iter(&self) -> impl Iterator<Item = String> {
-        match self {
-            SearcherSource::Stdin => io::stdin().lines().map_while(Result::ok),
-            SearcherSource::Command(_) => todo!(),
+    async fn inject_stdin(injector: Injector<String>) {
+        let mut lines = BufReader::new(io::stdin()).lines();
+        while let Ok(Some(line)) = lines.next_line().await {
+            injector.push(line, |line, columns| {
+                columns[0] = line.as_str().into();
+            });
         }
     }
 }
@@ -67,9 +69,7 @@ impl Searcher {
     pub fn init(&mut self) {
         let source = Arc::clone(&self.source);
         let injector = self.nucleo.injector();
-        task::spawn(async move {
-            source.inject(injector);
-        });
+        source.inject(injector);
     }
 
     pub fn search(&mut self, pattern: &str) {
