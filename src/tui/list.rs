@@ -1,5 +1,3 @@
-use std::sync::mpsc::Sender;
-
 use ratatui::{
     buffer::Buffer,
     layout::Rect,
@@ -8,6 +6,7 @@ use ratatui::{
         Block, List, ListItem, ListState, Scrollbar, ScrollbarState, StatefulWidget, Widget,
     },
 };
+use tokio::sync::mpsc::UnboundedSender;
 
 use crate::{
     searcher::{Searcher, SearcherSource},
@@ -69,7 +68,7 @@ pub struct SearchableList<'a> {
 }
 
 impl SearchableList<'_> {
-    pub fn new(sender: Sender<Action>, source: SearcherSource) -> Self {
+    pub fn new(sender: UnboundedSender<Action>, source: SearcherSource) -> Self {
         let list_builder = || {
             List::default()
                 .highlight_style(Color::Red)

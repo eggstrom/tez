@@ -1,5 +1,3 @@
-use std::sync::mpsc::Sender;
-
 use anyhow::Result;
 use input::Input;
 use list::SearchableList;
@@ -8,6 +6,7 @@ use ratatui::{
     layout::{Constraint, Layout, Rect},
     widgets::Widget,
 };
+use tokio::sync::mpsc::UnboundedSender;
 
 use crate::{
     searcher::SearcherSource,
@@ -24,7 +23,7 @@ pub struct Tui<'a> {
 }
 
 impl Tui<'_> {
-    pub fn new(sender: Sender<Action>) -> Result<Self> {
+    pub fn new(sender: UnboundedSender<Action>) -> Result<Self> {
         let input = Input::new();
         let list = SearchableList::new(sender, SearcherSource::Stdin);
         Ok(Tui { input, list })

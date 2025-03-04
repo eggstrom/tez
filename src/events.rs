@@ -1,19 +1,21 @@
-use std::{sync::mpsc::Sender, thread};
+use futures::StreamExt;
+use tokio::sync::mpsc::UnboundedSender;
 
-use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyModifiers};
+use crossterm::event::{Event, EventStream, KeyCode, KeyEvent, KeyModifiers};
 
 use crate::types::action::{Action, TuiAction};
 
-pub fn handle_events(sender: Sender<Action>) {
-    thread::spawn(move || loop {
-        if let Some(action) = match event::read().map(handle_event) {
+pub async fn handle_events(sender: UnboundedSender<Action>) {
+    let mut stream = EventStream::new();
+    while let Some(event) = stream.next().await {
+        if let Some(action) = match event.map(handle_event) {
             Ok(Some(action)) => Some(action),
+            Ok(None) => None,
             Err(error) => Some(Action::Error(error.into())),
-            _ => None,
         } {
             let _ = sender.send(action);
         }
-    });
+    }
 }
 
 fn handle_event(event: Event) -> Option<Action> {

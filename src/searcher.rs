@@ -1,7 +1,6 @@
 use std::{
     io,
-    sync::{mpsc::Sender, Arc, RwLock},
-    thread,
+    sync::{Arc, RwLock},
     time::{Duration, Instant},
 };
 
@@ -9,16 +8,17 @@ use nucleo::{
     pattern::{CaseMatching, Normalization},
     Injector, Nucleo,
 };
+use tokio::{sync::mpsc::UnboundedSender, task};
 
 use crate::types::action::Action;
 
 struct DebouncedSender<T> {
-    sender: Sender<T>,
+    sender: UnboundedSender<T>,
     last_send: RwLock<Option<Instant>>,
 }
 
 impl<T> DebouncedSender<T> {
-    pub fn new(sender: Sender<T>) -> Self {
+    pub fn new(sender: UnboundedSender<T>) -> Self {
         DebouncedSender {
             sender,
             last_send: RwLock::new(None),
@@ -68,7 +68,7 @@ pub struct Searcher {
 }
 
 impl Searcher {
-    pub fn new(sender: Sender<Action>, source: SearcherSource) -> Self {
+    pub fn new(sender: UnboundedSender<Action>, source: SearcherSource) -> Self {
         let sender = DebouncedSender::new(sender);
         let nucleo = Nucleo::new(
             nucleo::Config::DEFAULT,
@@ -92,7 +92,7 @@ impl Searcher {
     pub fn init(&mut self) {
         let source = Arc::clone(&self.source);
         let injector = self.nucleo.injector();
-        thread::spawn(move || {
+        task::spawn(async move {
             source.inject(injector);
         });
     }

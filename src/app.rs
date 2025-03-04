@@ -1,14 +1,13 @@
-use std::{
-    io,
-    sync::mpsc::{self, Receiver, Sender},
-};
+use std::io;
 
-use anyhow::{bail, Result};
+use anyhow::{anyhow, bail, Result};
 use crossterm::{
     execute,
     terminal::{EnterAlternateScreen, LeaveAlternateScreen},
 };
 use ratatui::{DefaultTerminal, TerminalOptions};
+use tokio::sync::mpsc::{self, UnboundedReceiver, UnboundedSender};
+use tokio::task;
 
 use crate::{config::Config, events::handle_events, state::State, tui::Tui, types::action::Action};
 
@@ -16,13 +15,13 @@ pub struct App<'a> {
     config: Config,
     state: State,
     tui: Tui<'a>,
-    sender: Sender<Action>,
-    receiver: Receiver<Action>,
+    sender: UnboundedSender<Action>,
+    receiver: UnboundedReceiver<Action>,
 }
 
 impl App<'_> {
     pub fn new(config: Config) -> Result<Self> {
-        let (sender, receiver) = mpsc::channel();
+        let (sender, receiver) = mpsc::unbounded_channel();
         let state = State::new()?;
         let tui = Tui::new(sender.clone())?;
         Ok(App {
@@ -34,15 +33,15 @@ impl App<'_> {
         })
     }
 
-    pub fn run(mut self) -> Result<()> {
+    pub async fn run(mut self) -> Result<()> {
         let mut terminal = self.init_terminal()?;
-        handle_events(self.sender.clone());
+        task::spawn(handle_events(self.sender.clone()));
 
         while self.state.running() {
             if self.state.should_draw() {
                 self.draw(&mut terminal)?;
             }
-            match self.receiver.recv()? {
+            match self.receiver.recv().await.ok_or(anyhow!("todo"))? {
                 Action::Error(error) => bail!(error),
                 Action::Exit => self.state.exit(),
                 Action::Draw => self.draw_forced(&mut terminal)?,

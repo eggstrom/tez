@@ -12,15 +12,17 @@ mod searcher;
 mod state;
 mod tui;
 mod types;
+mod utils;
 
-fn main() {
-    if let Err(error) = run() {
+#[tokio::main]
+async fn main() {
+    if let Err(error) = run().await {
         eprintln!("{} {error}", "error:".red());
     };
 }
 
-fn run() -> Result<()> {
+async fn run() -> Result<()> {
     let config = Cli::parse().config()?;
-    App::new(config)?.run()?;
+    App::new(config)?.run().await?;
     Ok(())
 }
