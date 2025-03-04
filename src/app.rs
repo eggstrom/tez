@@ -6,10 +6,16 @@ use crossterm::{
     terminal::{EnterAlternateScreen, LeaveAlternateScreen},
 };
 use ratatui::{DefaultTerminal, TerminalOptions};
-use tokio::sync::mpsc::{self, UnboundedReceiver, UnboundedSender};
+use tokio::sync::{
+    mpsc::{self, UnboundedReceiver, UnboundedSender},
+    watch,
+};
 use tokio::task;
 
-use crate::{config::Config, events::handle_events, state::State, tui::Tui, types::action::Action};
+use crate::{
+    config::Config, events::handle_events, searcher::debounce_draws, state::State, tui::Tui,
+    types::action::Action,
+};
 
 pub struct App<'a> {
     config: Config,
@@ -22,8 +28,11 @@ pub struct App<'a> {
 impl App<'_> {
     pub fn new(config: Config) -> Result<Self> {
         let (sender, receiver) = mpsc::unbounded_channel();
+        let (draw_sender, draw_receiver) = watch::channel(());
+        task::spawn(debounce_draws(draw_receiver, sender.clone()));
+
         let state = State::new()?;
-        let tui = Tui::new(sender.clone())?;
+        let tui = Tui::new(draw_sender)?;
         Ok(App {
             config,
             state,

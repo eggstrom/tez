@@ -6,12 +6,9 @@ use ratatui::{
         Block, List, ListItem, ListState, Scrollbar, ScrollbarState, StatefulWidget, Widget,
     },
 };
-use tokio::sync::mpsc::UnboundedSender;
+use tokio::sync::watch::Sender;
 
-use crate::{
-    searcher::{Searcher, SearcherSource},
-    types::action::Action,
-};
+use crate::searcher::{Searcher, SearcherSource};
 
 use super::lazy::LazyList;
 
@@ -68,14 +65,14 @@ pub struct SearchableList<'a> {
 }
 
 impl SearchableList<'_> {
-    pub fn new(sender: UnboundedSender<Action>, source: SearcherSource) -> Self {
+    pub fn new(source: SearcherSource, draw_sender: Sender<()>) -> Self {
         let list_builder = || {
             List::default()
                 .highlight_style(Color::Red)
                 .block(Block::bordered())
         };
         SearchableList {
-            searcher: Searcher::new(sender, source),
+            searcher: Searcher::new(source, draw_sender),
             list: LazyList::new(list_builder),
             scrollbar_state: ScrollbarState::default(),
         }

@@ -1,43 +1,19 @@
-use std::{
-    io,
-    sync::{Arc, RwLock},
-    time::{Duration, Instant},
-};
+use std::{io, sync::Arc, time::Duration};
 
 use nucleo::{
     pattern::{CaseMatching, Normalization},
     Injector, Nucleo,
 };
-use tokio::{sync::mpsc::UnboundedSender, task};
+use tokio::{
+    sync::{
+        mpsc::UnboundedSender,
+        watch::{Receiver, Sender},
+    },
+    task,
+    time::sleep,
+};
 
 use crate::types::action::Action;
-
-struct DebouncedSender<T> {
-    sender: UnboundedSender<T>,
-    last_send: RwLock<Option<Instant>>,
-}
-
-impl<T> DebouncedSender<T> {
-    pub fn new(sender: UnboundedSender<T>) -> Self {
-        DebouncedSender {
-            sender,
-            last_send: RwLock::new(None),
-        }
-    }
-
-    pub fn send(&self, data: T, delay: Duration) {
-        if self
-            .last_send
-            .read()
-            .is_ok_and(|last_send| last_send.is_none_or(|last_send| last_send.elapsed() > delay))
-        {
-            let _ = self.sender.send(data);
-            if let Ok(mut last_send) = self.last_send.write() {
-                *last_send = Some(Instant::now());
-            }
-        }
-    }
-}
 
 pub enum SearcherSource {
     Stdin,
@@ -68,12 +44,11 @@ pub struct Searcher {
 }
 
 impl Searcher {
-    pub fn new(sender: UnboundedSender<Action>, source: SearcherSource) -> Self {
-        let sender = DebouncedSender::new(sender);
+    pub fn new(source: SearcherSource, draw_sender: Sender<()>) -> Self {
         let nucleo = Nucleo::new(
             nucleo::Config::DEFAULT,
             Arc::new(move || {
-                sender.send(Action::Draw, Duration::from_millis(100));
+                let _ = draw_sender.send(());
             }),
             None,
             1,
@@ -134,5 +109,12 @@ impl Searcher {
             .matched_items(offset.min(max)..(offset + height).min(max))
             .map(|item| item.data.clone())
             .collect()
+    }
+}
+
+pub async fn debounce_draws(mut draw_receiver: Receiver<()>, sender: UnboundedSender<Action>) {
+    while draw_receiver.changed().await.is_ok() {
+        let _ = sender.send(Action::Draw);
+        sleep(Duration::from_millis(100)).await;
     }
 }

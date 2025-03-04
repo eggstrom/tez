@@ -6,12 +6,9 @@ use ratatui::{
     layout::{Constraint, Layout, Rect},
     widgets::Widget,
 };
-use tokio::sync::mpsc::UnboundedSender;
+use tokio::sync::watch::Sender;
 
-use crate::{
-    searcher::SearcherSource,
-    types::action::{Action, TuiAction},
-};
+use crate::{searcher::SearcherSource, types::action::TuiAction};
 
 mod input;
 mod lazy;
@@ -23,9 +20,9 @@ pub struct Tui<'a> {
 }
 
 impl Tui<'_> {
-    pub fn new(sender: UnboundedSender<Action>) -> Result<Self> {
+    pub fn new(draw_sender: Sender<()>) -> Result<Self> {
         let input = Input::new();
-        let list = SearchableList::new(sender, SearcherSource::Stdin);
+        let list = SearchableList::new(SearcherSource::Stdin, draw_sender);
         Ok(Tui { input, list })
     }
 
