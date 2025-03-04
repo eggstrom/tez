@@ -31,17 +31,17 @@ impl Alignment {
         Ok(if s == "center" {
             Alignment::Center
         } else if let Some(s) = s.strip_prefix("left") {
-            if s.is_empty() {
-                Alignment::Left(Extent::ZERO)
+            Alignment::Left(if s.is_empty() {
+                Extent::ZERO
             } else {
-                Alignment::Left(Alignment::parse_offset(s.trim_start())?)
-            }
+                Alignment::parse_offset(s.trim_start())?
+            })
         } else if let Some(s) = s.strip_prefix("right") {
-            if s.is_empty() {
-                Alignment::Right(Extent::ZERO)
+            Alignment::Right(if s.is_empty() {
+                Extent::ZERO
             } else {
-                Alignment::Right(Alignment::parse_offset(s.trim_start())?)
-            }
+                Alignment::parse_offset(s.trim_start())?
+            })
         } else {
             Err(ParseAlignmentError)?
         })
@@ -121,7 +121,6 @@ mod tests {
         "right ( 1 )",
         " right ",
     ];
-
     const PARSED_STRINGS: &[Result<Alignment, ParseAlignmentError>] = &[
         Ok(Alignment::Left(Extent::ZERO)),
         Ok(Alignment::Left(Extent::Cells(1))),

@@ -97,7 +97,6 @@ mod tests {
     use super::*;
 
     const STRINGS: &[&str] = &["1", "10%", "10.0%", "10 %", "10.0", " 1 ", " 10% "];
-
     const PARSED_STRINGS: &[Result<Extent, ParseExtentError>] = &[
         Ok(Extent::Cells(1)),
         Ok(Extent::Percentage(0.1)),
@@ -116,14 +115,6 @@ mod tests {
         );
     }
 
-    const INTS: &[i64] = &[0, -1, 65536];
-
-    const DESERIALIZED_INTS: &[Result<Extent, ParseExtentError>] = &[
-        Ok(Extent::Cells(0)),
-        Err(ParseExtentError),
-        Err(ParseExtentError),
-    ];
-
     #[test]
     fn deserialize() {
         assert_eq!(
@@ -137,11 +128,18 @@ mod tests {
                 .collect::<Vec<_>>()
         );
 
+        let ints = [0, -1, 65536];
+        let deserialized_ints = [
+            Ok(Extent::Cells(0)),
+            Err(ParseExtentError),
+            Err(ParseExtentError),
+        ];
+
         assert_eq!(
-            INTS.iter()
+            ints.iter()
                 .map(|int| toml::Value::Integer(*int).try_into())
                 .collect::<Vec<_>>(),
-            DESERIALIZED_INTS
+            deserialized_ints
                 .iter()
                 .map(|res| res.map_err(<toml::de::Error as de::Error>::custom))
                 .collect::<Vec<_>>()
