@@ -115,6 +115,6 @@ impl Searcher {
 pub async fn debounce_draws(mut draw_receiver: Receiver<()>, sender: UnboundedSender<Action>) {
     while draw_receiver.changed().await.is_ok() {
         let _ = sender.send(Action::Draw);
-        sleep(Duration::from_millis(100)).await;
+        sleep(Duration::from_secs_f32(1.0 / 60.0)).await;
     }
 }
