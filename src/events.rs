@@ -1,3 +1,4 @@
+use derive_more::From;
 use futures::StreamExt;
 use tokio::sync::mpsc::UnboundedSender;
 
@@ -5,13 +6,19 @@ use crossterm::event::{Event, EventStream, KeyCode, KeyEvent, KeyModifiers};
 
 use crate::types::action::{Action, TuiAction};
 
-pub async fn handle_events(sender: UnboundedSender<Action>) {
+#[derive(From)]
+pub enum Message {
+    Error(anyhow::Error),
+    Action(Action),
+}
+
+pub async fn handle_events(sender: UnboundedSender<Message>) {
     let mut stream = EventStream::new();
     while let Some(event) = stream.next().await {
         if let Some(action) = match event.map(handle_event) {
-            Ok(Some(action)) => Some(action),
+            Ok(Some(action)) => Some(action.into()),
             Ok(None) => None,
-            Err(error) => Some(Action::Error(error.into())),
+            Err(error) => Some(Message::Error(error.into())),
         } {
             let _ = sender.send(action);
         }

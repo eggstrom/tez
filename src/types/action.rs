@@ -1,6 +1,5 @@
 use std::{
     fmt::{self, Display, Formatter},
-    mem,
     str::FromStr,
 };
 
@@ -12,23 +11,11 @@ use serde::{
 };
 use thiserror::Error;
 
-#[derive(Debug, From)]
+#[derive(Debug, From, PartialEq)]
 pub enum Action {
-    Error(anyhow::Error),
     Exit,
     Draw,
     Tui(TuiAction),
-}
-
-impl PartialEq for Action {
-    fn eq(&self, other: &Self) -> bool {
-        match (self, other) {
-            (Action::Error(_), Action::Error(_)) => true,
-            (Action::Error(_), _) | (_, Action::Error(_)) => false,
-            (Action::Tui(a), Action::Tui(b)) => a == b,
-            _ => mem::discriminant(self) == mem::discriminant(other),
-        }
-    }
 }
 
 #[derive(Debug, PartialEq)]

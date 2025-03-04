@@ -10,7 +10,11 @@ use tokio::sync::{mpsc, watch};
 use tokio::task;
 
 use crate::{
-    config::Config, events::handle_events, searcher::debounce_draws, state::State, tui::Tui,
+    config::Config,
+    events::{handle_events, Message},
+    searcher::debounce_draws,
+    state::State,
+    tui::Tui,
     types::action::Action,
 };
 
@@ -18,6 +22,7 @@ pub struct App<'a> {
     config: Config,
     state: State,
     tui: Tui<'a>,
+    terminal: DefaultTerminal,
 }
 
 impl App<'_> {
@@ -27,34 +32,37 @@ impl App<'_> {
 
         let state = State::new()?;
         let tui = Tui::new(draw_sender)?;
-        let mut app = App { config, state, tui };
+        let terminal = App::init_terminal(&config, &state)?;
+        let mut app = App {
+            config,
+            state,
+            tui,
+            terminal,
+        };
 
-        let mut terminal = app.init_terminal()?;
         task::spawn(handle_events(sender.clone()));
         task::spawn(debounce_draws(draw_receiver, sender));
 
         while app.state.running() {
             if app.state.should_draw() {
-                app.draw(&mut terminal)?;
+                app.draw()?;
             }
             match receiver.recv().await {
-                Some(Action::Error(error)) => Err(error)?,
-                Some(Action::Exit) => app.state.exit(),
-                Some(Action::Draw) => app.draw_forced(&mut terminal)?,
-                Some(Action::Tui(action)) => app.tui.handle_action(action),
+                Some(Message::Error(error)) => Err(error)?,
+                Some(Message::Action(action)) => app.handle_action(action)?,
                 None => break,
             }
         }
 
-        app.restore_terminal(&mut terminal)?;
+        app.restore_terminal()?;
         Ok(())
     }
 
-    fn init_terminal(&mut self) -> Result<DefaultTerminal> {
+    fn init_terminal(config: &Config, state: &State) -> Result<DefaultTerminal> {
         let mut terminal = ratatui::init_with_options(TerminalOptions {
-            viewport: self.config.viewport(self.state.terminal_size().1)?,
+            viewport: config.viewport(state.terminal_size().1)?,
         });
-        if !self.config.is_inline() {
+        if !config.is_inline() {
             execute!(io::stdout(), EnterAlternateScreen)?;
         } else {
             terminal.clear()?;
@@ -62,24 +70,33 @@ impl App<'_> {
         Ok(terminal)
     }
 
-    fn restore_terminal(&self, terminal: &mut DefaultTerminal) -> Result<()> {
+    fn restore_terminal(&mut self) -> Result<()> {
         ratatui::restore();
         if !self.config.is_inline() {
             execute!(io::stdout(), LeaveAlternateScreen)?
         } else {
-            terminal.clear()?;
+            self.terminal.clear()?;
         }
         Ok(())
     }
 
-    fn draw(&mut self, terminal: &mut DefaultTerminal) -> Result<()> {
-        terminal
+    fn handle_action(&mut self, action: Action) -> Result<()> {
+        match action {
+            Action::Exit => self.state.exit(),
+            Action::Draw => self.draw_forced()?,
+            Action::Tui(action) => self.tui.handle_action(action),
+        }
+        Ok(())
+    }
+
+    fn draw(&mut self) -> Result<()> {
+        self.terminal
             .draw(|frame| frame.render_widget(&mut self.tui, self.config.area(frame.area())))?;
         Ok(())
     }
 
-    fn draw_forced(&mut self, terminal: &mut DefaultTerminal) -> Result<()> {
-        self.draw(terminal)?;
+    fn draw_forced(&mut self) -> Result<()> {
+        self.draw()?;
         self.state.skip_frame();
         Ok(())
     }

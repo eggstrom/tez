@@ -14,7 +14,7 @@ use tokio::{
     time::sleep,
 };
 
-use crate::types::action::Action;
+use crate::{events::Message, types::action::Action};
 
 pub enum SearcherSource {
     Stdin,
@@ -112,9 +112,9 @@ impl Searcher {
     }
 }
 
-pub async fn debounce_draws(mut draw_receiver: Receiver<()>, sender: UnboundedSender<Action>) {
+pub async fn debounce_draws(mut draw_receiver: Receiver<()>, sender: UnboundedSender<Message>) {
     while draw_receiver.changed().await.is_ok() {
-        let _ = sender.send(Action::Draw);
+        let _ = sender.send(Action::Draw.into());
         sleep(Duration::from_secs_f32(1.0 / 60.0)).await;
     }
 }
