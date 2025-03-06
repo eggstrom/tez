@@ -17,6 +17,9 @@ pub struct Cli {
     /// Set config file path
     #[arg(short, long, default_value_t = ConfigPath::default())]
     config: ConfigPath,
+    /// Ignore config file
+    #[arg(short = 'C', long)]
+    disable_config: bool,
     /// Disable default binds
     #[arg(short, long)]
     disable_default_binds: bool,
@@ -43,7 +46,11 @@ impl Cli {
     }
 
     pub fn config_path(&self) -> Option<&Path> {
-        self.config.0.as_deref()
+        if !self.disable_config {
+            self.config.0.as_deref()
+        } else {
+            None
+        }
     }
 }
 
