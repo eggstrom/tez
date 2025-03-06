@@ -2,14 +2,14 @@ use std::{collections::HashMap, fs, path::Path};
 
 use anyhow::Result;
 use clap::Parser;
+use cli::Cli;
 use derive_more::From;
 use ratatui::{layout::Rect, Viewport};
 use serde::Deserialize;
 
-use crate::{
-    cli::Cli,
-    types::{action::Action, alignment::Alignment, extent::Extent, key::Key},
-};
+use crate::types::{action::Action, alignment::Alignment, extent::Extent, key::Key};
+
+mod cli;
 
 #[derive(Clone, Debug, Default, Deserialize)]
 pub struct Config {

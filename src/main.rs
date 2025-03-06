@@ -2,7 +2,6 @@ use app::App;
 use crossterm::style::Stylize;
 
 mod app;
-mod cli;
 mod config;
 mod events;
 mod searcher;
