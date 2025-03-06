@@ -17,6 +17,9 @@ pub struct Cli {
     /// Set config file path
     #[arg(short, long, default_value_t = ConfigPath::default())]
     config: ConfigPath,
+    /// Disable default binds
+    #[arg(short, long)]
+    disable_default_binds: bool,
 
     /// Set viewport width
     #[arg(short = 'W', long)]
@@ -35,6 +38,7 @@ impl Cli {
         config.set_width(self.width);
         config.set_height(self.height);
         config.set_alignment(self.alignment);
+        config.set_disable_default_binds(self.disable_default_binds);
         config
     }
 

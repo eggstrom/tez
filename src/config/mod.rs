@@ -1,14 +1,15 @@
-use std::{collections::HashMap, fs, path::Path};
+use std::{fs, path::Path};
 
 use anyhow::Result;
+use binds::Binds;
 use clap::Parser;
 use cli::Cli;
-use derive_more::From;
 use ratatui::{layout::Rect, Viewport};
 use serde::Deserialize;
 
 use crate::types::{action::Action, alignment::Alignment, extent::Extent, key::Key};
 
+mod binds;
 mod cli;
 
 #[derive(Clone, Debug, Default, Deserialize)]
@@ -16,27 +17,23 @@ pub struct Config {
     width: Option<Extent>,
     height: Option<Extent>,
     alignment: Option<Alignment>,
+
     #[serde(default)]
     binds: Binds,
-}
-
-#[derive(Clone, Debug, Default, Deserialize, From, PartialEq)]
-pub struct Binds(HashMap<Key, Action>);
-
-impl Binds {
-    pub fn action_for_key(&self, key: &Key) -> Option<Action> {
-        self.0.get(key).cloned()
-    }
+    #[serde(default)]
+    disable_default_binds: bool,
 }
 
 impl Config {
     pub fn load() -> Result<Self> {
         let cli = Cli::parse();
-        let config = cli
+        let mut config = cli
             .config_path()
             .map(Config::parse)
             .unwrap_or(Ok(Config::default()))?;
-        Ok(config.overwrite(&cli.config()))
+        config = config.overwrite(&cli.config());
+        config.insert_default_binds();
+        Ok(config)
     }
 
     fn parse<P>(path: P) -> Result<Self>
@@ -56,6 +53,10 @@ impl Config {
 
     pub fn set_alignment(&mut self, alignment: Option<Alignment>) {
         self.alignment = alignment;
+    }
+
+    pub fn set_disable_default_binds(&mut self, disable_default_binds: bool) {
+        self.disable_default_binds = disable_default_binds;
     }
 
     #[allow(clippy::option_map_unit_fn)]
@@ -106,22 +107,13 @@ impl Config {
         }
     }
 
+    pub fn insert_default_binds(&mut self) {
+        if !self.disable_default_binds {
+            self.binds.insert_defaults();
+        }
+    }
+
     pub fn action_for_key(&self, key: &Key) -> Option<Action> {
         self.binds.action_for_key(key)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crossterm::event::{KeyCode as K, KeyModifiers as M};
-
-    #[test]
-    fn binds() {
-        let parsed = toml::from_str::<Binds>("'ctrl+c' = 'exit'");
-        assert_eq!(
-            parsed,
-            Ok(HashMap::from([(Key::new(K::Char('c'), M::CONTROL), Action::Exit)]).into())
-        );
     }
 }
