@@ -46,11 +46,7 @@ impl Cli {
     }
 
     pub fn config_path(&self) -> Option<&Path> {
-        if !self.disable_config {
-            self.config.0.as_deref()
-        } else {
-            None
-        }
+        self.config.0.as_deref().filter(|_| !self.disable_config)
     }
 }
 
