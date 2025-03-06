@@ -2,63 +2,25 @@ use derive_more::From;
 use futures::StreamExt;
 use tokio::sync::mpsc::UnboundedSender;
 
-use crossterm::event::{Event, EventStream, KeyCode, KeyEvent, KeyModifiers};
+use crossterm::event::{Event, EventStream};
 
-use crate::types::action::{Action, TuiAction};
+use crate::types::{action::Action, key::Key};
 
 #[derive(From)]
 pub enum Message {
     Error(anyhow::Error),
     Action(Action),
+    Key(Key),
 }
 
 pub async fn handle_events(sender: UnboundedSender<Message>) {
-    let mut stream = EventStream::new();
-    while let Some(event) = stream.next().await {
-        if let Some(action) = match event.map(handle_event) {
-            Ok(Some(action)) => Some(action.into()),
-            Ok(None) => None,
+    while let Some(event) = EventStream::new().next().await {
+        if let Some(message) = match event {
             Err(error) => Some(Message::Error(error.into())),
+            Ok(Event::Key(key)) => Some(Message::Key(key.into())),
+            _ => None,
         } {
-            let _ = sender.send(action);
+            let _ = sender.send(message);
         }
-    }
-}
-
-fn handle_event(event: Event) -> Option<Action> {
-    match event {
-        Event::Key(event) => handle_key_event(event),
-        _ => None,
-    }
-}
-
-fn handle_key_event(event: KeyEvent) -> Option<Action> {
-    let action = match event {
-        KeyEvent {
-            code,
-            modifiers: KeyModifiers::CONTROL,
-            ..
-        } => match code {
-            KeyCode::Char('c') => Some(Action::Exit),
-            KeyCode::Char('n') => Some(TuiAction::Next.into()),
-            KeyCode::Char('p') => Some(TuiAction::Previous.into()),
-            _ => None,
-        },
-        KeyEvent {
-            code,
-            modifiers: KeyModifiers::ALT,
-            ..
-        } => match code {
-            KeyCode::Char('a') => Some(TuiAction::First.into()),
-            KeyCode::Char('e') => Some(TuiAction::Last.into()),
-            _ => None,
-        },
-        _ => None,
-    };
-
-    // This is temporary
-    match action {
-        Some(_) => action,
-        None => Some(TuiAction::Key(event).into()),
     }
 }

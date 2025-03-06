@@ -23,6 +23,12 @@ pub struct Config {
 #[derive(Clone, Debug, Default, Deserialize, From, PartialEq)]
 pub struct Binds(HashMap<Key, Action>);
 
+impl Binds {
+    pub fn action_for_key(&self, key: &Key) -> Option<Action> {
+        self.0.get(key).cloned()
+    }
+}
+
 impl Config {
     pub fn load() -> Result<Self> {
         let cli = Cli::parse();
@@ -98,6 +104,10 @@ impl Config {
             width,
             height,
         }
+    }
+
+    pub fn action_for_key(&self, key: &Key) -> Option<Action> {
+        self.binds.action_for_key(key)
     }
 }
 

@@ -15,7 +15,7 @@ use crate::{
     searcher::debounce_draws,
     state::State,
     tui::Tui,
-    types::action::Action,
+    types::{action::Action, key::Key},
 };
 
 pub struct App<'a> {
@@ -51,6 +51,7 @@ impl App<'_> {
             match receiver.recv().await {
                 Some(Message::Error(error)) => Err(error)?,
                 Some(Message::Action(action)) => app.handle_action(action)?,
+                Some(Message::Key(key)) => app.handle_key(key)?,
                 None => break,
             }
         }
@@ -81,15 +82,6 @@ impl App<'_> {
         Ok(())
     }
 
-    fn handle_action(&mut self, action: Action) -> Result<()> {
-        match action {
-            Action::Exit => self.state.exit(),
-            Action::Draw => self.draw_forced()?,
-            Action::Tui(action) => self.tui.handle_action(action),
-        }
-        Ok(())
-    }
-
     fn draw(&mut self) -> Result<()> {
         self.terminal
             .draw(|frame| frame.render_widget(&mut self.tui, self.config.area(frame.area())))?;
@@ -99,6 +91,22 @@ impl App<'_> {
     fn draw_forced(&mut self) -> Result<()> {
         self.draw()?;
         self.state.skip_frame();
+        Ok(())
+    }
+
+    fn handle_action(&mut self, action: Action) -> Result<()> {
+        match action {
+            Action::Exit => self.state.exit(),
+            Action::Draw => self.draw_forced()?,
+            Action::Tui(action) => self.tui.handle_action(action),
+        }
+        Ok(())
+    }
+
+    fn handle_key(&mut self, key: Key) -> Result<()> {
+        if let Some(action) = self.config.action_for_key(&key) {
+            self.handle_action(action)?;
+        }
         Ok(())
     }
 }

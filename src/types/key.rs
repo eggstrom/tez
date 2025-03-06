@@ -3,7 +3,7 @@ use std::{
     str::FromStr,
 };
 
-use crossterm::event::{KeyCode, KeyModifiers};
+use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use serde::{
     de::{self, Visitor},
     Deserialize, Deserializer,
@@ -77,6 +77,15 @@ impl Key {
             "alt" => KeyModifiers::ALT,
             _ => Err(ParseKeyError::InvalidModifier(s.to_string()))?,
         })
+    }
+}
+
+impl From<KeyEvent> for Key {
+    fn from(value: KeyEvent) -> Self {
+        Key {
+            key: value.code,
+            modifiers: value.modifiers,
+        }
     }
 }
 
