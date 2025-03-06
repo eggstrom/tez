@@ -26,10 +26,11 @@ pub struct App<'a> {
 }
 
 impl App<'_> {
-    pub async fn run(config: Config) -> Result<()> {
+    pub async fn run() -> Result<()> {
         let (sender, mut receiver) = mpsc::unbounded_channel();
         let (draw_sender, draw_receiver) = watch::channel(());
 
+        let config = Config::load()?;
         let state = State::new()?;
         let tui = Tui::new(draw_sender)?;
         let terminal = App::init_terminal(&config, &state)?;

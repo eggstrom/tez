@@ -11,14 +11,14 @@ use serde::{
 };
 use thiserror::Error;
 
-#[derive(Debug, From, PartialEq)]
+#[derive(Clone, Debug, From, PartialEq)]
 pub enum Action {
     Exit,
     Draw,
     Tui(TuiAction),
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum TuiAction {
     First,
     Last,

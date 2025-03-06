@@ -1,7 +1,4 @@
-use anyhow::Result;
 use app::App;
-use clap::Parser;
-use cli::Cli;
 use crossterm::style::Stylize;
 
 mod app;
@@ -16,11 +13,7 @@ mod utils;
 
 #[tokio::main]
 async fn main() {
-    if let Err(error) = run().await {
+    if let Err(error) = App::run().await {
         eprintln!("{} {error}", "error:".red());
     };
-}
-
-async fn run() -> Result<()> {
-    App::run(Cli::parse().config()?).await
 }

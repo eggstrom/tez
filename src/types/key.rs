@@ -10,7 +10,7 @@ use serde::{
 };
 use thiserror::Error;
 
-#[derive(Debug, Hash, PartialEq, Eq)]
+#[derive(Clone, Debug, Hash, PartialEq, Eq)]
 pub struct Key {
     key: KeyCode,
     modifiers: KeyModifiers,
