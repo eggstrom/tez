@@ -9,6 +9,7 @@ use serde::{
     Deserialize, Deserializer,
 };
 use thiserror::Error;
+use tui_textarea::Input;
 
 #[derive(Clone, Debug, Hash, PartialEq, Eq)]
 pub struct Key {
@@ -86,6 +87,12 @@ impl From<KeyEvent> for Key {
             key: value.code,
             modifiers: value.modifiers,
         }
+    }
+}
+
+impl From<Key> for Input {
+    fn from(value: Key) -> Self {
+        KeyEvent::new(value.key, value.modifiers).into()
     }
 }
 

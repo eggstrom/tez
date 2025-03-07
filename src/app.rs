@@ -15,7 +15,10 @@ use crate::{
     searcher::debounce_draws,
     state::State,
     tui::Tui,
-    types::{action::Action, key::Key},
+    types::{
+        action::{Action, InputAction},
+        key::Key,
+    },
 };
 
 pub struct App<'a> {
@@ -104,9 +107,11 @@ impl App<'_> {
     }
 
     fn handle_key(&mut self, key: Key) -> Result<()> {
-        if let Some(action) = self.config.action_for_key(&key) {
-            self.handle_action(action)?;
-        }
+        self.handle_action(
+            self.config
+                .action_for_key(&key)
+                .unwrap_or(InputAction::Key(key).into()),
+        )?;
         Ok(())
     }
 }

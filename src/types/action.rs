@@ -3,13 +3,14 @@ use std::{
     str::FromStr,
 };
 
-use crossterm::event::KeyEvent;
 use derive_more::From;
 use serde::{
     de::{self, Visitor},
     Deserialize, Deserializer,
 };
 use thiserror::Error;
+
+use super::key::Key;
 
 #[derive(Clone, Debug, From, PartialEq)]
 pub enum Action {
@@ -18,13 +19,36 @@ pub enum Action {
     Tui(TuiAction),
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, From, PartialEq)]
 pub enum TuiAction {
     First,
     Last,
     Next,
     Previous,
-    Key(KeyEvent),
+    Input(InputAction),
+}
+
+#[derive(Clone, Debug, From, PartialEq)]
+pub enum InputAction {
+    Key(Key),
+    InsertNewline,
+    MoveForward,
+    MoveBack,
+    MoveUp,
+    MoveDown,
+    MoveForwardWord,
+    MoveBackWord,
+    MoveToEndOfWord,
+    MoveToTop,
+    MoveToBottom,
+    MoveToHead,
+    MoveToEnd,
+    Delete,
+    DeleteNext,
+    DeleteWord,
+    DeleteNextWord,
+    DeleteToHead,
+    DeleteToEnd,
 }
 
 impl Action {
@@ -37,6 +61,12 @@ impl Action {
             "previous" => TuiAction::Previous.into(),
             _ => Err(ParseActionError(s.to_string()))?,
         })
+    }
+}
+
+impl From<InputAction> for Action {
+    fn from(value: InputAction) -> Self {
+        Action::Tui(TuiAction::Input(value))
     }
 }
 

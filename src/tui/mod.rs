@@ -32,8 +32,8 @@ impl Tui<'_> {
             TuiAction::Last => self.list.last(),
             TuiAction::Next => self.list.next(),
             TuiAction::Previous => self.list.previous(),
-            TuiAction::Key(event) => {
-                if let Some(text) = self.input.handle_key_event(event) {
+            TuiAction::Input(action) => {
+                if let Some(text) = self.input.handle_action(action) {
                     self.list.search(text);
                 }
             }
@@ -47,7 +47,7 @@ impl Widget for &mut Tui<'_> {
         Self: Sized,
     {
         let [top_area, bottom_area] =
-            Layout::vertical([Constraint::Fill(1), Constraint::Length(3)]).areas(area);
+            Layout::vertical([Constraint::Fill(1), Constraint::Length(5)]).areas(area);
         self.list.render(top_area, buf);
         self.input.render(bottom_area, buf);
     }

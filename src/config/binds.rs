@@ -5,7 +5,7 @@ use derive_more::From;
 use serde::Deserialize;
 
 use crate::types::{
-    action::{Action, TuiAction},
+    action::{Action, InputAction, TuiAction},
     key::Key,
 };
 
@@ -19,7 +19,7 @@ impl Binds {
 }
 
 impl Binds {
-    /// Sets default binds if the key isn't already taken by another bind.
+    /// Sets default binds if the key isn't already used by another bind.
     #[rustfmt::skip]
     pub fn insert_defaults(&mut self) {
         for (key, action) in [
@@ -28,6 +28,33 @@ impl Binds {
             (Key::new(K::Char('p'), M::CONTROL), TuiAction::Previous.into()),
             (Key::new(K::Char('a'), M::ALT), TuiAction::First.into()),
             (Key::new(K::Char('e'), M::ALT), TuiAction::Last.into()),
+
+            (Key::new(K::Left, M::NONE), InputAction::MoveBack.into()),
+            (Key::new(K::Down, M::NONE), InputAction::MoveDown.into()),
+            (Key::new(K::Up, M::NONE), InputAction::MoveUp.into()),
+            (Key::new(K::Right, M::NONE), InputAction::MoveForward.into()),
+            (Key::new(K::Left, M::CONTROL), InputAction::MoveBackWord.into()),
+            (Key::new(K::Down, M::CONTROL), InputAction::MoveToBottom.into()),
+            (Key::new(K::Up, M::CONTROL), InputAction::MoveToTop.into()),
+            (Key::new(K::Right, M::CONTROL), InputAction::MoveToEndOfWord.into()),
+            (Key::new(K::Home, M::NONE), InputAction::MoveToHead.into()),
+            (Key::new(K::End, M::NONE), InputAction::MoveToEnd.into()),
+            (Key::new(K::Char('f'), M::CONTROL), InputAction::MoveForward.into()),
+            (Key::new(K::Char('b'), M::CONTROL), InputAction::MoveBack.into()),
+            (Key::new(K::Char('f'), M::ALT), InputAction::MoveToEndOfWord.into()),
+            (Key::new(K::Char('b'), M::ALT), InputAction::MoveBackWord.into()),
+            (Key::new(K::Char('a'), M::CONTROL), InputAction::MoveToHead.into()),
+            (Key::new(K::Char('e'), M::CONTROL), InputAction::MoveToEnd.into()),
+
+            (Key::new(K::Backspace, M::NONE), InputAction::Delete.into()),
+            (Key::new(K::Backspace, M::CONTROL), InputAction::DeleteWord.into()),
+            (Key::new(K::Delete, M::NONE), InputAction::DeleteNext.into()),
+            (Key::new(K::Delete, M::CONTROL), InputAction::DeleteNextWord.into()),
+            (Key::new(K::Char('d'), M::CONTROL), InputAction::DeleteNext.into()),
+            (Key::new(K::Char('d'), M::ALT), InputAction::DeleteNextWord.into()),
+            (Key::new(K::Char('w'), M::CONTROL), InputAction::DeleteWord.into()),
+            (Key::new(K::Char('u'), M::CONTROL), InputAction::DeleteToHead.into()),
+            (Key::new(K::Char('k'), M::CONTROL), InputAction::DeleteToEnd.into()),
         ] {
             self.0.entry(key).or_insert(action);
         }
