@@ -31,7 +31,6 @@ pub enum TuiAction {
 #[derive(Clone, Debug, From, PartialEq)]
 pub enum InputAction {
     Key(Key),
-    InsertNewline,
     MoveForward,
     MoveBack,
     MoveUp,
@@ -59,6 +58,23 @@ impl Action {
             "last" => TuiAction::Last.into(),
             "next" => TuiAction::Next.into(),
             "previous" => TuiAction::Previous.into(),
+            "move-forward" => InputAction::MoveForward.into(),
+            "move-back" => InputAction::MoveBack.into(),
+            "move-up" => InputAction::MoveUp.into(),
+            "move-down" => InputAction::MoveDown.into(),
+            "move-forward-word" => InputAction::MoveForwardWord.into(),
+            "move-back-word" => InputAction::MoveBackWord.into(),
+            "move-to-end-of-word" => InputAction::MoveToEndOfWord.into(),
+            "move-to-top" => InputAction::MoveToTop.into(),
+            "move-to-bottom" => InputAction::MoveToBottom.into(),
+            "move-to-head" => InputAction::MoveToHead.into(),
+            "move-to-end" => InputAction::MoveToEnd.into(),
+            "delete" => InputAction::Delete.into(),
+            "delete-next" => InputAction::DeleteNext.into(),
+            "delete-word" => InputAction::DeleteWord.into(),
+            "delete-next-word" => InputAction::DeleteNextWord.into(),
+            "delete-to-head" => InputAction::DeleteToHead.into(),
+            "delete-to-end" => InputAction::DeleteToEnd.into(),
             _ => Err(ParseActionError(s.to_string()))?,
         })
     }

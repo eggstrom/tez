@@ -22,7 +22,6 @@ impl Input<'_> {
     pub fn handle_action(&mut self, action: InputAction) -> Option<&str> {
         if match action {
             InputAction::Key(key) => self.text_area.input_without_shortcuts(key),
-            InputAction::InsertNewline => { self.text_area.insert_newline(); true },
             // Some move actions return true because they can change the selected line
             InputAction::MoveForward => { self.text_area.move_cursor(CursorMove::Forward); true },
             InputAction::MoveBack => { self.text_area.move_cursor(CursorMove::Back); true },
