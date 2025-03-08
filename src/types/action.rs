@@ -21,10 +21,10 @@ pub enum Action {
 
 #[derive(Clone, Debug, From, PartialEq)]
 pub enum TuiAction {
-    First,
-    Last,
     Next,
     Previous,
+    First,
+    Last,
     Input(InputAction),
 }
 
@@ -54,10 +54,10 @@ impl Action {
     fn parse(s: &str) -> Result<Self, ParseActionError> {
         Ok(match s {
             "exit" => Action::Exit,
-            "first" => TuiAction::First.into(),
-            "last" => TuiAction::Last.into(),
             "next" => TuiAction::Next.into(),
             "previous" => TuiAction::Previous.into(),
+            "first" => TuiAction::First.into(),
+            "last" => TuiAction::Last.into(),
             "move-forward" => InputAction::MoveForward.into(),
             "move-back" => InputAction::MoveBack.into(),
             "move-up" => InputAction::MoveUp.into(),

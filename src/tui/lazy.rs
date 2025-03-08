@@ -49,14 +49,6 @@ impl LazyState {
         }
     }
 
-    pub fn first(&mut self) {
-        self.pos = LazyPos::Start(0);
-    }
-
-    pub fn last(&mut self) {
-        self.pos = LazyPos::End(0);
-    }
-
     pub fn next(&mut self) {
         self.pos = match (self.len, self.pos) {
             (0, _) => LazyPos::None,
@@ -73,6 +65,14 @@ impl LazyState {
             (_, LazyPos::Start(pos)) if pos > 0 => LazyPos::Start(pos - 1),
             _ => LazyPos::End(0),
         };
+    }
+
+    pub fn first(&mut self) {
+        self.pos = LazyPos::Start(0);
+    }
+
+    pub fn last(&mut self) {
+        self.pos = LazyPos::End(0);
     }
 
     pub fn offset(&self) -> usize {
@@ -105,20 +105,20 @@ impl<'a> LazyList<'a> {
         }
     }
 
-    pub fn first(&mut self) {
-        self.state.first();
-    }
-
-    pub fn last(&mut self) {
-        self.state.last();
-    }
-
     pub fn next(&mut self) {
         self.state.next();
     }
 
     pub fn previous(&mut self) {
         self.state.previous();
+    }
+
+    pub fn first(&mut self) {
+        self.state.first();
+    }
+
+    pub fn last(&mut self) {
+        self.state.last();
     }
 
     pub fn update(&mut self, len: usize, height: u16) {

@@ -28,10 +28,10 @@ impl Tui<'_> {
 
     pub fn handle_action(&mut self, action: TuiAction) {
         match action {
-            TuiAction::First => self.list.first(),
-            TuiAction::Last => self.list.last(),
             TuiAction::Next => self.list.next(),
             TuiAction::Previous => self.list.previous(),
+            TuiAction::First => self.list.first(),
+            TuiAction::Last => self.list.last(),
             TuiAction::Input(action) => {
                 if let Some(text) = self.input.handle_action(action) {
                     self.list.search(text);
