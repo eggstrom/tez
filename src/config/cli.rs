@@ -16,15 +16,15 @@ pub struct Cli {
     #[group(flatten)]
     config: PartialConfig,
 
-    /// Set config file path
-    #[arg(short, long = "config", default_value_t = ConfigPath::default())]
-    config_path: ConfigPath,
-    /// Ignore config file
+    /// Set config path
+    #[arg(short, long = "config", default_value_t = ConfigDir::default(), value_name = "PATH")]
+    config_dir: ConfigDir,
+    /// Ignore config files
     #[arg(short = 'C', long)]
     disable_config: bool,
 
     /// Bind an action to a key
-    #[arg(short, long = "bind")]
+    #[arg(short, long = "bind", value_name = "BIND")]
     binds: Vec<Bind>,
 }
 
@@ -37,7 +37,7 @@ impl Cli {
     }
 
     fn config_dir(&self) -> Option<&Path> {
-        self.config_path
+        self.config_dir
             .0
             .as_deref()
             .filter(|_| !self.disable_config)
@@ -53,23 +53,23 @@ impl Cli {
 }
 
 #[derive(Clone, Debug)]
-pub struct ConfigPath(Option<PathBuf>);
+pub struct ConfigDir(Option<PathBuf>);
 
-impl Default for ConfigPath {
+impl Default for ConfigDir {
     fn default() -> Self {
-        ConfigPath(dirs::config_dir().map(|path| path.join("tez")))
+        ConfigDir(dirs::config_dir().map(|path| path.join("tez")))
     }
 }
 
-impl FromStr for ConfigPath {
+impl FromStr for ConfigDir {
     type Err = Infallible;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(ConfigPath(s.parse().ok()))
+        Ok(ConfigDir(s.parse().ok()))
     }
 }
 
-impl Display for ConfigPath {
+impl Display for ConfigDir {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match &self.0 {
             Some(path) => path.to_string_lossy().fmt(f),

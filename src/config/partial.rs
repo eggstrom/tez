@@ -13,10 +13,10 @@ pub struct PartialConfig {
     pub disable_default_binds: bool,
 
     /// Set viewport width
-    #[arg(short = 'W', long)]
+    #[arg(short = 'W', long, value_name = "EXTENT")]
     width: Option<Extent>,
     /// Set viewport height
-    #[arg(short = 'H', long)]
+    #[arg(short = 'H', long, value_name = "EXTENT")]
     height: Option<Extent>,
     /// Set viewport alignment
     #[arg(short = 'A', long)]
