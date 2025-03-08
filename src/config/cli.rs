@@ -7,13 +7,14 @@ use std::{
 
 use clap::Parser;
 
-use crate::{
-    config::Config,
-    types::{alignment::Alignment, bind::Bind, extent::Extent},
-};
+use crate::{config::Config, types::bind::Bind};
+
+use super::common::CommonConfig;
 
 #[derive(Debug, Parser)]
 pub struct Cli {
+    #[group(flatten)]
+    common: CommonConfig,
     /// Set config file path
     #[arg(short, long, default_value_t = ConfigPath::default())]
     config: ConfigPath,
@@ -24,30 +25,14 @@ pub struct Cli {
     /// Bind an action to a key
     #[arg(short, long = "bind")]
     binds: Vec<Bind>,
-    /// Disable default binds
-    #[arg(short, long)]
-    disable_default_binds: bool,
-
-    /// Set viewport width
-    #[arg(short = 'W', long)]
-    width: Option<Extent>,
-    /// Set viewport height
-    #[arg(short = 'H', long)]
-    height: Option<Extent>,
-    /// Set viewport alignment
-    #[arg(short = 'A', long)]
-    alignment: Option<Alignment>,
 }
 
 impl Cli {
     pub fn config(self) -> Config {
-        let mut config = Config::default();
-        config.set_width(self.width);
-        config.set_height(self.height);
-        config.set_alignment(self.alignment);
-        config.set_disable_default_binds(self.disable_default_binds);
-        config.binds = self.binds.into();
-        config
+        Config {
+            common: self.common,
+            binds: self.binds.into(),
+        }
     }
 
     pub fn config_path(&self) -> Option<&Path> {
