@@ -6,7 +6,7 @@ use serde::Deserialize;
 use crate::types::{alignment::Alignment, extent::Extent};
 
 #[derive(Args, Clone, Debug, Default, Deserialize, PartialEq)]
-pub struct CommonConfig {
+pub struct PartialConfig {
     /// Disable default binds
     #[arg(short, long)]
     #[serde(default)]
@@ -23,13 +23,15 @@ pub struct CommonConfig {
     alignment: Option<Alignment>,
 }
 
-impl CommonConfig {
+impl PartialConfig {
     #[allow(clippy::option_map_unit_fn)]
-    pub fn overwrite(&mut self, other: &Self) {
-        self.disable_default_binds = other.disable_default_binds;
-        other.width.map(|w| self.width = Some(w));
-        other.height.map(|h| self.height = Some(h));
-        other.alignment.map(|a| self.alignment = Some(a));
+    pub fn overwrite(&self, other: &Self) -> Self {
+        let mut new = PartialConfig::default();
+        new.disable_default_binds = other.disable_default_binds;
+        other.width.map(|w| new.width = Some(w));
+        other.height.map(|h| new.height = Some(h));
+        other.alignment.map(|a| new.alignment = Some(a));
+        new
     }
 
     pub fn is_inline(&self) -> bool {
@@ -78,16 +80,14 @@ mod tests {
 
     #[test]
     fn overwrite() {
-        let a = CommonConfig::default();
-        let b = CommonConfig {
+        let a = PartialConfig::default();
+        let b = PartialConfig {
             disable_default_binds: true,
             height: Some(Extent::ZERO),
             width: Some(Extent::ZERO),
             alignment: Some(Alignment::default()),
         };
-        let mut c = a.clone();
-        c.overwrite(&b);
 
-        assert_eq!(b, c);
+        assert_eq!(b, a.overwrite(&b));
     }
 }

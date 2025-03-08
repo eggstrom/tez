@@ -90,8 +90,8 @@ impl From<KeyEvent> for Key {
     }
 }
 
-impl From<Key> for Input {
-    fn from(value: Key) -> Self {
+impl From<&Key> for Input {
+    fn from(value: &Key) -> Self {
         KeyEvent::new(value.key, value.modifiers).into()
     }
 }

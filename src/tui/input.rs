@@ -19,7 +19,7 @@ impl Input<'_> {
     }
 
     #[rustfmt::skip]
-    pub fn handle_action(&mut self, action: InputAction) -> Option<&str> {
+    pub fn handle_action(&mut self, action: &InputAction) -> Option<&str> {
         if match action {
             InputAction::Key(key) => self.text_area.input_without_shortcuts(key),
             // Some move actions return true because they can change the selected line

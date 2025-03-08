@@ -26,7 +26,7 @@ impl Tui<'_> {
         Ok(Tui { input, list })
     }
 
-    pub fn handle_action(&mut self, action: TuiAction) {
+    pub fn handle_action(&mut self, action: &TuiAction) {
         match action {
             TuiAction::Next => self.list.next(),
             TuiAction::Previous => self.list.previous(),

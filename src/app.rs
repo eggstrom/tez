@@ -53,7 +53,7 @@ impl App<'_> {
             }
             match receiver.recv().await {
                 Some(Message::Error(error)) => Err(error)?,
-                Some(Message::Action(action)) => app.handle_action(action)?,
+                Some(Message::Action(action)) => app.handle_action(&action)?,
                 Some(Message::Key(key)) => app.handle_key(key)?,
                 None => break,
             }
@@ -97,7 +97,7 @@ impl App<'_> {
         Ok(())
     }
 
-    fn handle_action(&mut self, action: Action) -> Result<()> {
+    fn handle_action(&mut self, action: &Action) -> Result<()> {
         match action {
             Action::Exit => self.state.exit(),
             Action::Draw => self.draw_forced()?,
@@ -107,11 +107,12 @@ impl App<'_> {
     }
 
     fn handle_key(&mut self, key: Key) -> Result<()> {
-        self.handle_action(
-            self.config
-                .action_for_key(&key)
-                .unwrap_or(InputAction::Key(key).into()),
-        )?;
+        let action = self
+            .config
+            .action(&key)
+            .cloned()
+            .unwrap_or(InputAction::Key(key).into());
+        self.handle_action(&action)?;
         Ok(())
     }
 }

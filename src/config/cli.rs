@@ -7,17 +7,18 @@ use std::{
 
 use clap::Parser;
 
-use crate::{config::Config, types::bind::Bind};
+use crate::types::bind::Bind;
 
-use super::common::CommonConfig;
+use super::{full::FullConfig, partial::PartialConfig};
 
 #[derive(Debug, Parser)]
 pub struct Cli {
     #[group(flatten)]
-    common: CommonConfig,
+    config: PartialConfig,
+
     /// Set config file path
-    #[arg(short, long, default_value_t = ConfigPath::default())]
-    config: ConfigPath,
+    #[arg(short, long = "config", default_value_t = ConfigPath::default())]
+    config_path: ConfigPath,
     /// Ignore config file
     #[arg(short = 'C', long)]
     disable_config: bool,
@@ -28,15 +29,26 @@ pub struct Cli {
 }
 
 impl Cli {
-    pub fn config(self) -> Config {
-        Config {
-            common: self.common,
+    pub fn config(self) -> FullConfig {
+        FullConfig {
+            config: self.config,
             binds: self.binds.into(),
         }
     }
 
-    pub fn config_path(&self) -> Option<&Path> {
-        self.config.0.as_deref().filter(|_| !self.disable_config)
+    fn config_dir(&self) -> Option<&Path> {
+        self.config_path
+            .0
+            .as_deref()
+            .filter(|_| !self.disable_config)
+    }
+
+    pub fn config_file(&self) -> Option<PathBuf> {
+        self.config_dir().map(|path| path.join("config.toml"))
+    }
+
+    pub fn script_dir(&self) -> Option<PathBuf> {
+        self.config_dir().map(|path| path.join("scripts"))
     }
 }
 
@@ -45,7 +57,7 @@ pub struct ConfigPath(Option<PathBuf>);
 
 impl Default for ConfigPath {
     fn default() -> Self {
-        ConfigPath(dirs::config_dir().map(|path| path.join("tez").join("config.toml")))
+        ConfigPath(dirs::config_dir().map(|path| path.join("tez")))
     }
 }
 

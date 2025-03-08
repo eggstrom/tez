@@ -1,4 +1,7 @@
-use std::collections::HashMap;
+use std::{
+    collections::HashMap,
+    ops::{Deref, DerefMut},
+};
 
 use crossterm::event::{KeyCode as K, KeyModifiers as M};
 use derive_more::From;
@@ -10,26 +13,19 @@ use crate::types::{
     key::Key,
 };
 
-#[derive(Clone, Debug, Default, Deserialize, From, PartialEq)]
+#[derive(Clone, Debug, Deserialize, From, PartialEq)]
 pub struct Binds(HashMap<Key, Action>);
 
 impl Binds {
-    pub fn action_for_key(&self, key: &Key) -> Option<Action> {
-        self.0.get(key).cloned()
+    pub fn new() -> Self {
+        Binds(HashMap::new())
     }
 }
 
-impl Binds {
-    pub fn overwrite(&mut self, other: &Binds) {
-        for (key, action) in other.0.iter() {
-            self.0.insert(key.clone(), action.clone());
-        }
-    }
-
-    /// Sets default binds if the key isn't already used by another bind.
+impl Default for Binds {
     #[rustfmt::skip]
-    pub fn insert_defaults(&mut self) {
-        for (key, action) in [
+    fn default() -> Self {
+        let map = HashMap::from([
             (Key::new(K::Char('c'), M::CONTROL), Action::Exit),
             (Key::new(K::Char('n'), M::CONTROL), TuiAction::Next.into()),
             (Key::new(K::Char('p'), M::CONTROL), TuiAction::Previous.into()),
@@ -62,9 +58,22 @@ impl Binds {
             (Key::new(K::Char('w'), M::CONTROL), InputAction::DeleteWord.into()),
             (Key::new(K::Char('u'), M::CONTROL), InputAction::DeleteToHead.into()),
             (Key::new(K::Char('k'), M::CONTROL), InputAction::DeleteToEnd.into()),
-        ] {
-            self.0.entry(key).or_insert(action);
-        }
+        ]);
+        Binds(map)
+    }
+}
+
+impl Deref for Binds {
+    type Target = HashMap<Key, Action>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl DerefMut for Binds {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
     }
 }
 
@@ -88,23 +97,6 @@ mod tests {
         assert_eq!(
             parsed,
             Ok(HashMap::from([(Key::new(K::Char('c'), M::CONTROL), Action::Exit)]).into())
-        );
-    }
-
-    #[test]
-    fn insert_defaults() {
-        let mut binds = toml::from_str::<Binds>("'ctrl+c' = 'next'").unwrap();
-        let mut empty_binds = Binds::default();
-        binds.insert_defaults();
-        empty_binds.insert_defaults();
-
-        assert_eq!(
-            binds.action_for_key(&Key::new(K::Char('c'), M::CONTROL)),
-            Some(TuiAction::Next.into())
-        );
-        assert_eq!(
-            empty_binds.action_for_key(&Key::new(K::Char('c'), M::CONTROL)),
-            Some(Action::Exit)
         );
     }
 }
