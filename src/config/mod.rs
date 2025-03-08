@@ -1,6 +1,6 @@
 use std::{ops::Deref, rc::Rc};
 
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use binds::Binds;
 use clap::Parser;
 use cli::Cli;
@@ -37,15 +37,10 @@ impl Config {
             .script_dir()
             .map(Scripts::load)
             .unwrap_or(Ok(Scripts::default()))?;
-        let active_script_config = match cli.active_script() {
-            Some(name) => Some(
-                script_configs
-                    .get(name)
-                    .map(Rc::clone)
-                    .ok_or_else(|| anyhow!("couldn't find script `{name}`"))?,
-            ),
-            None => None,
-        };
+        let active_script_config = cli
+            .active_script()
+            .map(|name| script_configs.get(name))
+            .transpose()?;
         let cli_config = cli.config();
         let active_config = match &active_script_config {
             Some(script_config) => main_config.overwrite(script_config).overwrite(&cli_config),

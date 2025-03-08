@@ -1,12 +1,6 @@
-use std::{
-    collections::HashMap,
-    fs,
-    ops::{Deref, DerefMut},
-    path::Path,
-    rc::Rc,
-};
+use std::{collections::HashMap, fs, ops::Deref, path::Path, rc::Rc};
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use derive_more::From;
 use serde::{Deserialize, Deserializer};
 
@@ -20,28 +14,21 @@ impl Scripts {
     where
         P: AsRef<Path>,
     {
-        let mut scripts = Scripts::default();
+        let mut scripts = HashMap::new();
         if let Ok(configs) = path.as_ref().read_dir() {
             for config in configs.filter_map(Result::ok) {
                 let config = ScriptConfig::parse(config.path())?;
                 scripts.insert(Rc::clone(&config.name), Rc::new(config));
             }
         }
-        Ok(scripts)
+        Ok(Scripts(scripts))
     }
-}
 
-impl Deref for Scripts {
-    type Target = HashMap<Rc<str>, Rc<ScriptConfig>>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl DerefMut for Scripts {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
+    pub fn get(&self, name: &str) -> Result<Rc<ScriptConfig>> {
+        self.0
+            .get(name)
+            .map(Rc::clone)
+            .ok_or_else(|| anyhow!("couldn't find script `{name}`"))
     }
 }
 
