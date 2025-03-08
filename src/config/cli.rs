@@ -5,7 +5,7 @@ use std::{
     str::FromStr,
 };
 
-use clap::Parser;
+use clap::{Parser, Subcommand};
 
 use crate::types::bind::Bind;
 
@@ -26,6 +26,18 @@ pub struct Cli {
     /// Bind an action to a key
     #[arg(short, long = "bind", value_name = "BIND")]
     binds: Vec<Bind>,
+
+    #[command(subcommand)]
+    command: Command,
+}
+
+#[derive(Clone, Debug, Subcommand)]
+pub enum Command {
+    /// Run a script
+    Run {
+        /// Script name
+        script: String,
+    },
 }
 
 impl Cli {
@@ -49,6 +61,12 @@ impl Cli {
 
     pub fn script_dir(&self) -> Option<PathBuf> {
         self.config_dir().map(|path| path.join("scripts"))
+    }
+
+    pub fn active_script(&self) -> Option<&str> {
+        match &self.command {
+            Command::Run { script } => Some(script),
+        }
     }
 }
 

@@ -1,6 +1,6 @@
 use std::{ops::Deref, rc::Rc};
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use binds::Binds;
 use clap::Parser;
 use cli::Cli;
@@ -37,18 +37,29 @@ impl Config {
             .script_dir()
             .map(Scripts::load)
             .unwrap_or(Ok(Scripts::default()))?;
+        let active_script_config = match cli.active_script() {
+            Some(name) => Some(
+                script_configs
+                    .get(name)
+                    .map(Rc::clone)
+                    .ok_or_else(|| anyhow!("couldn't find script `{name}`"))?,
+            ),
+            None => None,
+        };
         let cli_config = cli.config();
-        let active_config = main_config.overwrite(&cli_config);
+        let active_config = match &active_script_config {
+            Some(script_config) => main_config.overwrite(script_config).overwrite(&cli_config),
+            None => main_config.overwrite(&cli_config),
+        };
 
-        let config = Config {
+        Ok(Config {
             default_binds: Binds::default(),
             main_config,
             cli_config,
             script_configs,
-            active_script_config: None,
+            active_script_config,
             active_config,
-        };
-        Ok(dbg!(config))
+        })
     }
 
     pub fn action(&self, key: &Key) -> Option<&Action> {

@@ -24,14 +24,13 @@ pub struct PartialConfig {
 }
 
 impl PartialConfig {
-    #[allow(clippy::option_map_unit_fn)]
     pub fn overwrite(&self, other: &Self) -> Self {
-        let mut new = PartialConfig::default();
-        new.disable_default_binds = other.disable_default_binds;
-        other.width.map(|w| new.width = Some(w));
-        other.height.map(|h| new.height = Some(h));
-        other.alignment.map(|a| new.alignment = Some(a));
-        new
+        PartialConfig {
+            disable_default_binds: other.disable_default_binds,
+            width: other.width.or(self.width),
+            height: other.height.or(self.height),
+            alignment: other.alignment.or(self.alignment),
+        }
     }
 
     pub fn is_inline(&self) -> bool {
