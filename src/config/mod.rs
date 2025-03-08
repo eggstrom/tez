@@ -65,6 +65,7 @@ impl Config {
         other.width.map(|w| new.set_width(Some(w)));
         other.height.map(|w| new.set_height(Some(w)));
         other.alignment.map(|w| new.set_alignment(Some(w)));
+        new.binds.overwrite(&other.binds);
         new
     }
 

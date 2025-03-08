@@ -10,10 +10,10 @@ use super::{
     key::{Key, ParseKeyError},
 };
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Bind {
-    key: Key,
-    action: Action,
+    pub key: Key,
+    pub action: Action,
 }
 
 impl Bind {

@@ -6,6 +6,7 @@ use serde::Deserialize;
 
 use crate::types::{
     action::{Action, InputAction, TuiAction},
+    bind::Bind,
     key::Key,
 };
 
@@ -19,6 +20,12 @@ impl Binds {
 }
 
 impl Binds {
+    pub fn overwrite(&mut self, other: &Binds) {
+        for (key, action) in other.0.iter() {
+            self.0.insert(key.clone(), action.clone());
+        }
+    }
+
     /// Sets default binds if the key isn't already used by another bind.
     #[rustfmt::skip]
     pub fn insert_defaults(&mut self) {
@@ -58,6 +65,16 @@ impl Binds {
         ] {
             self.0.entry(key).or_insert(action);
         }
+    }
+}
+
+impl From<Vec<Bind>> for Binds {
+    fn from(value: Vec<Bind>) -> Self {
+        let map = value
+            .into_iter()
+            .map(|bind| (bind.key, bind.action))
+            .collect();
+        Binds(map)
     }
 }
 

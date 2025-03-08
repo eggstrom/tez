@@ -9,7 +9,7 @@ use clap::Parser;
 
 use crate::{
     config::Config,
-    types::{alignment::Alignment, extent::Extent},
+    types::{alignment::Alignment, bind::Bind, extent::Extent},
 };
 
 #[derive(Debug, Parser)]
@@ -20,6 +20,10 @@ pub struct Cli {
     /// Ignore config file
     #[arg(short = 'C', long)]
     disable_config: bool,
+
+    /// Bind an action to a key
+    #[arg(short, long = "bind")]
+    binds: Vec<Bind>,
     /// Disable default binds
     #[arg(short, long)]
     disable_default_binds: bool,
@@ -36,12 +40,13 @@ pub struct Cli {
 }
 
 impl Cli {
-    pub fn config(&self) -> Config {
+    pub fn config(self) -> Config {
         let mut config = Config::default();
         config.set_width(self.width);
         config.set_height(self.height);
         config.set_alignment(self.alignment);
         config.set_disable_default_binds(self.disable_default_binds);
+        config.binds = self.binds.into();
         config
     }
 
